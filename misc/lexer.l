@@ -1,7 +1,11 @@
 %{
 
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include "keywords.h"
+
+#include "parser.tab.h"
 
 %}
 
@@ -21,28 +25,40 @@ hex_number 0[Xx]{alfanumeric}+
 
 "#"[^\n]* ;
 {whitespaces}+  ;
-\n+  {printf("NEWLINE\n"); }
+\n+ { return END_LINE; }
 
-"," { printf("COMMA\n"); }
-"%" { printf("IMD_REG\n"); }
-"$" { printf("IMD_VAL\n"); }
-"[" { printf("IDR_open\n"); }
-"]" { printf("IDR_close\n"); }
+"," { return SEPERATOR; }
+"%" { return IND_REG; }
+"$" { return IND_VAL; }
+"[" { return IDN_OPEN; }
+"]" { return IDN_CLOSE; }
 
-"+" { printf("ADD\n"); }
-"-" { printf("SUB\n"); }
-"*" { printf("MUL\n"); }
-"/" { printf("DIV\n"); }
-"(" { printf("OPEN\n"); }
-")" { printf("CLOSE\n"); }
+"+" { return ADD; }
+"-" { return SUB; }
+"*" { return MUL; }
+"/" { return DIV; }
+"(" { return BRAKET_OPEN; }
+")" { return BRAKET_CLOSE; }
 
 
-"."{word}+ { printf("%s - DIRECTIVE\n", yytext); }
+"."{word}+ { yylval.str = strdup(yytext); return DIRECTIVE; }
 
-{word}: { printf("%s - LABEL\n", yytext); }
+{word}: { yylval.str = strdup(yytext); return LABEL; }
 
-{number}  { printf("%s - DEC_NUMBER\n", yytext); }
-{hex_number}  { printf("%s - HEX_NUMBER\n", yytext); }
+{number}  { yylval.number = atoi(yytext); return NUMBER; }
+{hex_number}  { yylval.number = atoi(yytext + 2); return NUMBER; }
 
-{word} { if(lookup_opcode(yytext) == TYPE_OPCODE) printf("%s - OPCODE\n", yytext);  else printf("%s - SYMBOL\n", yytext); }
+{word} {
+  switch(lookup_identifier(yytext)){
+    case TYPE_REG:
+      yylval.str = strdup(yytext);
+      return REGISTER;
+    case TYPE_OPCODE:
+      yylval.str = strdup(yytext);
+      return OP_CODE;
+    case TYPE_SYMBOL:
+      yylval.str = strdup(yytext);
+      return SYMBOL;
+  }
+}
 %%
