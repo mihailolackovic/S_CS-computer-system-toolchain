@@ -5,6 +5,8 @@
 
 %}
 
+%option header-file="misc/lexer.h"
+
 digit [0-9]
 letter_lower [a-z]
 letter_upper [A-Z]
@@ -13,7 +15,7 @@ alfanumeric {letter_all}|{digit}
 whitespaces [ \r\t]
 word {letter_all}({alfanumeric}|_)*
 number {digit}+
-hex_number 0x{alfanumeric}+
+hex_number 0[Xx]{alfanumeric}+
 
 %%
 
@@ -22,7 +24,8 @@ hex_number 0x{alfanumeric}+
 \n+  {printf("NEWLINE\n"); }
 
 "," { printf("COMMA\n"); }
-"%" { printf("IMD\n"); }
+"%" { printf("IMD_REG\n"); }
+"$" { printf("IMD_VAL\n"); }
 "[" { printf("IDR_open\n"); }
 "]" { printf("IDR_close\n"); }
 
