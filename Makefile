@@ -3,7 +3,7 @@ ASM_INC=
 ASM_OBJ=
 
 
-clean:	assembler
+cleanup:	assembler
 	sudo cp assembler /usr/local/bin/
 	rm -f *.o *.c binASM/*.o assembler
 	rm -f misc/parser.tab.c misc/parser.tab.h misc/lexer.c misc/lexer.h
@@ -31,3 +31,9 @@ lexer.o: misc/lexer.l misc/keywords.h parser.o misc/parser.tab.c
 parser.o: misc/parser.y misc/keywords.h misc/instructions.h
 	bison -o misc/parser.tab.c -d misc/parser.y
 	gcc -Wall -Imisc -c misc/parser.tab.c -o parser.o
+
+
+clean:
+	rm -f *.o *.c binASM/*.o assembler
+	rm -f misc/parser.tab.c misc/parser.tab.h misc/lexer.c misc/lexer.h
+	rmdir binASM

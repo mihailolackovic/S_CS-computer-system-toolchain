@@ -15,19 +15,19 @@ int main(int argc, const char** argv){
     return 0;
   }
   if(files->type == ERROR){
-    printf("Unkown option");
+    printf("Error unknown option");
     return 0;
   }
-
-  printf("%s\n", files->input);
-  printf("%s\n", files->output);
   
   yyin = fopen(files->input, "r");
 
-  if(!yyin)
-    printf("E");
+  if(!yyin){
+    printf("Error file not found: %s\n", files->input);
+    return 0;
+  }
 
   yyparse();
+
   printf("TOTAL: %d\n", instruction_count);
   for (int i = 0; i < instruction_count; i++) {
     Instruction *ins = &instructions[i];
@@ -55,11 +55,13 @@ int main(int argc, const char** argv){
                 printf("      immediate = %d\n", op->immediate);
             } 
             else if (op->type == SYM) {
-                printf("      symbol = %s\n",
-                       op->symbol ? op->symbol : "NULL");
+                printf("      symbol = %s\n", op->symbol);
             } 
             else if (op->type == REG) {
-                printf("      reg = %d\n", op->reg);
+                printf("      reg = %s\n", op->reg);
+            }
+            else if (op->type == STR) {
+                printf("   string = %s\n", op->string);
             }
         }
     } else {
@@ -69,6 +71,7 @@ int main(int argc, const char** argv){
     printf("\n");
   }
 
+  
   free(files);
   return 0;
 }

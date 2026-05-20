@@ -6,7 +6,8 @@
 typedef enum{
   IMM = 0,
   SYM,
-  REG
+  REG,
+  STR
 } Operand_type;
 
 typedef enum{
@@ -19,7 +20,8 @@ typedef struct{
   union{
     int immediate;
     char* symbol;
-    Reg reg;
+    char* reg;
+    char* string;
   };
   int dereferance;
 } Operand;

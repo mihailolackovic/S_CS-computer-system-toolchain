@@ -8,6 +8,7 @@ static char* opcode_list[] = {
   "call",
   "ret",
   "jmp",
+  "beq",
   "bne",
   "bgt",
   "push",
@@ -43,15 +44,6 @@ static char* directive_list[] = {
 };
 
 Token lookup_identifier(const char *s){
-  if(s[0] == 'r')
-    if(atoi(s+1) <= 15)
-      return TYPE_REG;
-
-  if(strcmp(s, "sp") == 0)
-    return TYPE_REG;
-  if(strcmp(s, "pc") == 0)
-    return TYPE_REG;
-
   for(int i = 0; opcode_list[i]; i++){
     if(strcmp(opcode_list[i], s) == 0)
       return TYPE_OPCODE;

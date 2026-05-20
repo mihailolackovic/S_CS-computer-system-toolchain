@@ -20,8 +20,11 @@ whitespaces [ \r\t]
 word {letter_all}({alfanumeric}|_)*
 number {digit}+
 hex_number 0[Xx]{alfanumeric}+
+string_parts {whitespaces}*{word}{whitespaces}*
+string {string_parts}+
 
 %%
+\"{string}\" { yylval.str = strdup(yytext); return STRING; }
 
 "#"[^\n]* ;
 {whitespaces}+  ;
@@ -50,15 +53,14 @@ hex_number 0[Xx]{alfanumeric}+
 
 {word} {
   switch(lookup_identifier(yytext)){
-    case TYPE_REG:
-      yylval.str = strdup(yytext);
-      return REGISTER;
     case TYPE_OPCODE:
       yylval.str = strdup(yytext);
       return OP_CODE;
     case TYPE_SYMBOL:
       yylval.str = strdup(yytext);
       return SYMBOL;
+    case ERRORTYPE:
+      break;
   }
 }
 %%
