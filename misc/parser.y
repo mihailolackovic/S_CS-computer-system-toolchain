@@ -56,38 +56,8 @@ program
 line
   : END_LINE
   | curr_label END_LINE { pending_label = $1; }
-  | curr_label curr_mnemonic END_LINE {
-      Instruction ins;
-      ins.label = pending_label;
-      ins.mnemonic.type = mnemonic_type;
-      ins.mnemonic.id = mnemonic;
-      if (operand_count > 0) {
-        ins.operand_list = malloc(sizeof(Operand) * operand_count);
-        memcpy(ins.operand_list, list, sizeof(Operand) * operand_count);
-      } else {
-        ins.operand_list = NULL;
-      }
-      ins.operand_count = operand_count;
-      add_instruction(ins);
-      pending_label = NULL;
-      operand_count = 0;
-    }
-  | curr_label curr_mnemonic args END_LINE {
-      Instruction ins;
-      ins.label = pending_label;
-      ins.mnemonic.type = mnemonic_type;
-      ins.mnemonic.id = mnemonic;
-      if (operand_count > 0) {
-        ins.operand_list = malloc(sizeof(Operand) * operand_count);
-        memcpy(ins.operand_list, list, sizeof(Operand) * operand_count);
-      } else {
-        ins.operand_list = NULL;
-      }
-      ins.operand_count = operand_count;
-      add_instruction(ins);
-      pending_label = NULL;
-      operand_count = 0;
-    }
+  | curr_label curr_mnemonic END_LINE
+  | curr_label curr_mnemonic args END_LINE
   ;
 
 curr_label
@@ -96,46 +66,17 @@ curr_label
   ;
 
 curr_mnemonic
-  : DIRECTIVE {
-      mnemonic = $1;
-      mnemonic_type = DIRECTIVE_TYPE;
-    }
-  | OP_CODE {
-      mnemonic = $1;
-      mnemonic_type = OP_CODE_TYPE;
-    }
+  : DIRECTIVE
+  | OP_CODE
   ;
 
 arg
   : expression
-  | STRING {
-      Operand op;
-      op.type = REG;
-      op.reg = $1;
-      op.dereferance = 0;
-      list[operand_count++] = op;
-    }
-  | IND_REG SYMBOL {
-      Operand op;
-      op.type = REG;
-      op.reg = $2;
-      op.dereferance = 0;
-      list[operand_count++] = op;
-    }
-  | IND_VAL SYMBOL {
-      Operand op;
-      op.type = SYM;
-      op.symbol = $2;
-      op.dereferance = 1;
-      list[operand_count++] = op;
-    }
-  | IND_VAL NUMBER {
-      Operand op;
-      op.type = IMM;
-      op.immediate = $2;
-      op.dereferance = 1;
-      list[operand_count++] = op;
-    }
+  | STRING
+  | IND_REG REGISTER
+  | IND_REG SYMBOL
+  | IND_VAL SYMBOL
+  | IND_VAL NUMBER
   | relative_address
   ;
 
@@ -145,20 +86,9 @@ args
   ;
 
 expression
-  : SYMBOL {
-      Operand op;
-      op.type = SYM;
-      op.symbol = $1;
-      op.dereferance = 0;
-      list[operand_count++] = op;
-    }
-  | NUMBER {
-      Operand op;
-      op.type = IMM;
-      op.immediate = $1;
-      op.dereferance = 0;
-      list[operand_count++] = op;
-    }
+  : SYMBOL
+  | NUMBER
+  | IND_REG REGISTER
   | expression operand expression
   | BRAKET_OPEN expression BRAKET_CLOSE
   ;
@@ -171,17 +101,11 @@ operand
   ;
 
 relative_address
-  : IDN_OPEN IND_REG SYMBOL IDN_CLOSE {
-      Operand op;
-      op.type = REG;
-      op.reg = $3;
-      op.dereferance = 1;
-      list[operand_count++] = op;
-    }
-  | IDN_OPEN IND_REG SYMBOL ADD NUMBER IDN_CLOSE
-  | IDN_OPEN IND_REG SYMBOL ADD SYMBOL IDN_CLOSE
-  | IDN_OPEN IND_REG SYMBOL SUB NUMBER IDN_CLOSE
-  | IDN_OPEN IND_REG SYMBOL SUB SYMBOL IDN_CLOSE
+  : IDN_OPEN IND_REG REGISTER IDN_CLOSE
+  | IDN_OPEN IND_REG REGISTER ADD NUMBER IDN_CLOSE
+  | IDN_OPEN IND_REG REGISTER ADD SYMBOL IDN_CLOSE
+  | IDN_OPEN IND_REG REGISTER SUB NUMBER IDN_CLOSE
+  | IDN_OPEN IND_REG REGISTER SUB SYMBOL IDN_CLOSE
   ;
 
 %%

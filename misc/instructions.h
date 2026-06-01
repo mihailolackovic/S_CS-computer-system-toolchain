@@ -3,41 +3,49 @@
 
 #include "keywords.h"
 
-typedef enum{
-  IMM = 0,
-  SYM,
-  REG,
-  STR
-} Operand_type;
+typedef Operand;
 
 typedef enum{
-  DIRECTIVE_TYPE = 0,
-  OP_CODE_TYPE
-}Mnemonic_type;
+  OPERATION_TYPE_NONE,
+  OPERATION_TYPE_ADD,
+  OPERATION_TYPE_SUB,
+  OPERATION_TYPE_MUL,
+  OPERATION_TYPE_DIV
+} Operation;
 
 typedef struct{
-  Operand_type type;
+  Operand operand1;
+  Operand operand2;
+  int operand3;
+  Operation operation1;
+  Operation operation2;
+} Expression;   // (operand1 operation1 operand2) operation2 operand3
+
+typedef enum{
+  OPERAND_TYPE_EXPRESSION,
+  OPERAND_TYPE_NUMBER,
+  OPERAND_TYPE_SYMBOL,
+  OPERAND_TYPE_REGISTER,
+  OPERAND_TYPE_STRING
+} OperandType;
+
+struct Operand{
+  OperandType type;
   union{
-    int immediate;
+    Expression* expression;
+    long number;
     char* symbol;
     char* reg;
     char* string;
   };
-  int dereferance;
-} Operand;
-
-typedef struct{
-  Mnemonic_type type;
-  char* id;
-} Mnemonic;
-
+  int dereferance_flag;
+};
 
 typedef struct{
   char* label;
-  Mnemonic mnemonic;
+  char* func;
   Operand* operand_list;
   int operand_count;
 } Instruction;
-
 
 #endif

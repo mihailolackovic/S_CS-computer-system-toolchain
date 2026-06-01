@@ -49,7 +49,7 @@ string {string_parts}+
 {word}: { yylval.str = strdup(yytext); return LABEL; }
 
 {number}  { yylval.number = atoi(yytext); return NUMBER; }
-{hex_number}  { yylval.number = atoi(yytext + 2); return NUMBER; }
+{hex_number}  { yylval.number = strtol(yytext, NULL, 16); return NUMBER; }
 
 {word} {
   switch(lookup_identifier(yytext)){
@@ -59,6 +59,9 @@ string {string_parts}+
     case TYPE_SYMBOL:
       yylval.str = strdup(yytext);
       return SYMBOL;
+    case TYPE_REG:
+      yylval.str = strdup(yytext);
+      return REGISTER;
     case ERRORTYPE:
       break;
   }
