@@ -12,4 +12,23 @@ typedef enum {
 Token lookup_identifier(const char *s);
 Token lookup_directive(const char *s);
 
+// Stack for evaluating expressions
+
+typedef enum{
+  ITEM_NUMBER,
+  ITEM_SYMBOL,
+  ITEM_REGISTER,
+  ITEM_OPERATION
+} ItemType;
+
+typedef struct{
+  ItemType type;
+  union{
+    long number;
+    char* symbol;
+    char* reg;
+    long op;
+  };
+} StackItem;
+
 #endif
