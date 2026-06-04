@@ -23,26 +23,23 @@ Expression* create_expression(StackItem* stack){
   }
   printf("STACK END\n");
 
-  Operand operand1;
-  operand1.type = OPERAND_TYPE_REGISTER;
-  operand1.reg = "r1";
-  operand1.dereferance_flag = 1;
 
-  Operand operand2;
-  operand2.type = OPERAND_TYPE_SYMBOL;
-  operand2.symbol = "symbol";
-  operand2.dereferance_flag = 0;
-
-  long operand3 = 0;
-
-  Operation operation1 = OPERATION_TYPE_ADD;
-  Operation operation2 = OPERATION_TYPE_MUL;
+  Element element1;
+  element1.type = OPERAND_TYPE_SYMBOL;
+  element1.symbol = "symbol";
+  element1.coeficient = 2;
+  element1.operation = OPERATION_TYPE_ADD;
+  
+  Element element2;
+  element2.type = OPERAND_TYPE_NUMBER;
+  element2.symbol = NULL;
+  element2.coeficient = 89;
+  element2.operation = OPERATION_TYPE_NONE;
 
   Expression* expression = malloc(sizeof(Expression));
-  expression->operand1 = operand1;
-  expression->operand2 = operand2;
-  expression->operand3 = operand3;
-  expression->operation1 = operation1;
-  expression->operation2 = operation2;
+  expression->arr = malloc(2*sizeof(Element));
+  expression->arr[0] = element1;
+  expression->arr[1] = element2;
+  expression->arr_size = 2;
   return expression;
 };

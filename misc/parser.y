@@ -122,7 +122,7 @@ arg
   | SYMBOL  {
       Operand operand;
       operand.type = OPERAND_TYPE_SYMBOL;
-      operand.symbol = $1;
+      operand.string = $1;
       operand.dereferance_flag = 0;
 
       list[operand_count++] = operand;
@@ -186,10 +186,10 @@ expression
       stack[stack_counter++] = (StackItem){ITEM_REGISTER, $2};
     }
   | expression operand expression
-    | BRAKET_OPEN
-    {stack[stack_counter++] = (StackItem){ITEM_OPERATION, 5};}expression BRAKET_CLOSE {
-      stack[stack_counter++] = (StackItem){ITEM_OPERATION, 6};
-    }
+    | BRAKET_OPEN { stack[stack_counter++] = (StackItem){ITEM_OPERATION, 5};
+      }expression BRAKET_CLOSE {
+        stack[stack_counter++] = (StackItem){ITEM_OPERATION, 6};
+      }
   ;
 
 operand
@@ -217,17 +217,23 @@ relative_address
       list[operand_count++] = operand;
     }
   | IDN_OPEN IND_REG REGISTER ADD NUMBER IDN_CLOSE  {
-      Operand operand1;
-      operand1.type = OPERAND_TYPE_REGISTER;
-      operand1.reg = $3;
-      operand1.dereferance_flag = 1;
+      Element element1;
+      element1.type = OPERAND_TYPE_REGISTER;
+      element1.symbol = $3;
+      element1.coeficient = 1;
+      element1.operation = OPERATION_TYPE_ADD;
+
+      Element element2;
+      element2.type = OPERAND_TYPE_NUMBER;
+      element2.symbol = NULL;
+      element2.coeficient = $5;
+      element2.operation = OPERATION_TYPE_NONE;
 
       Expression expression;
-      expression.operand1 = operand1;
-      expression.operand2 = operand1;
-      expression.operand3 = $5;
-      expression.operation1 = OPERATION_TYPE_NONE;
-      expression.operation2 = OPERATION_TYPE_ADD;
+      expression.arr = malloc(2*sizeof(Element));
+      expression.arr[0] = element1;
+      expression.arr[1] = element2;
+      expression.arr_size = 2;
 
       Operand operand;
       operand.type = OPERAND_TYPE_EXPRESSION;
@@ -237,79 +243,9 @@ relative_address
 
       list[operand_count++] = operand;
     }
-  | IDN_OPEN IND_REG REGISTER ADD SYMBOL IDN_CLOSE  {
-      Operand operand1;
-      operand1.type = OPERAND_TYPE_REGISTER;
-      operand1.reg = $3;
-      operand1.dereferance_flag = 1;
-
-      Operand operand2;
-      operand2.type = OPERAND_TYPE_SYMBOL;
-      operand2.symbol = $5;
-      operand2.dereferance_flag = 0;
-
-      Expression expression;
-      expression.operand1 = operand1;
-      expression.operand2 = operand2;
-      expression.operand3 = 0;
-      expression.operation1 = OPERATION_TYPE_ADD;
-      expression.operation2 = OPERATION_TYPE_NONE;
-
-      Operand operand;
-      operand.type = OPERAND_TYPE_EXPRESSION;
-      operand.expression = malloc(sizeof(Expression));
-      memcpy(operand.expression,&expression, sizeof(Expression));
-      operand.dereferance_flag = 1;
-
-      list[operand_count++] = operand;
-    }
-  | IDN_OPEN IND_REG REGISTER SUB NUMBER IDN_CLOSE  {
-      Operand operand1;
-      operand1.type = OPERAND_TYPE_REGISTER;
-      operand1.reg = $3;
-      operand1.dereferance_flag = 1;
-
-      Expression expression;
-      expression.operand1 = operand1;
-      expression.operand2 = operand1;
-      expression.operand3 = $5;
-      expression.operation1 = OPERATION_TYPE_NONE;
-      expression.operation2 = OPERATION_TYPE_SUB;
-
-      Operand operand;
-      operand.type = OPERAND_TYPE_EXPRESSION;
-      operand.expression = malloc(sizeof(Expression));
-      memcpy(operand.expression,&expression, sizeof(Expression));
-      operand.dereferance_flag = 1;
-
-      list[operand_count++] = operand;
-    }
-  | IDN_OPEN IND_REG REGISTER SUB SYMBOL IDN_CLOSE  {
-      Operand operand1;
-      operand1.type = OPERAND_TYPE_REGISTER;
-      operand1.reg = $3;
-      operand1.dereferance_flag = 1;
-
-      Operand operand2;
-      operand2.type = OPERAND_TYPE_SYMBOL;
-      operand2.symbol = $5;
-      operand2.dereferance_flag = 0;
-
-      Expression expression;
-      expression.operand1 = operand1;
-      expression.operand2 = operand2;
-      expression.operand3 = 0;
-      expression.operation1 = OPERATION_TYPE_SUB;
-      expression.operation2 = OPERATION_TYPE_NONE;
-
-      Operand operand;
-      operand.type = OPERAND_TYPE_EXPRESSION;
-      operand.expression = malloc(sizeof(Expression));
-      memcpy(operand.expression,&expression, sizeof(Expression));
-      operand.dereferance_flag = 1;
-
-      list[operand_count++] = operand;
-    }
+  | IDN_OPEN IND_REG REGISTER ADD SYMBOL IDN_CLOSE
+  | IDN_OPEN IND_REG REGISTER SUB NUMBER IDN_CLOSE
+  | IDN_OPEN IND_REG REGISTER SUB SYMBOL IDN_CLOSE
   ;
 
 %%

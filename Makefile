@@ -1,4 +1,6 @@
-ASM_OBJ = binASM/CLI_Parser.o parser.o lexer.o keywords.o instructions.o Assemble.o main.o
+ASM_OBJ = binASM/CLI_Parser.o parser.o lexer.o keywords.o \
+		binASM/emit.o binASM/Assembler_structs.o binASM/Assembler_functions.o \
+		instructions.o Assemble.o main.o
 CFLAGS = -g -Wall -Iinc/Assembler -Imisc
 
 
@@ -11,7 +13,7 @@ cleanup:	assembler
 assembler:	$(ASM_OBJ)
 	gcc $(CFLAGS) $(ASM_OBJ) -o assembler -lfl
 
-main.o:	misc/parser.o src/Assembler/main.c
+main.o:	parser.o src/Assembler/main.c
 	gcc $(CFLAGS) -c src/Assembler/main.c -o main.o
 
 Assemble.o: src/Assembler/Assemble.c inc/Assembler/Assemble.h
@@ -19,6 +21,15 @@ Assemble.o: src/Assembler/Assemble.c inc/Assembler/Assemble.h
 
 binASM:
 	mkdir -p binASM
+
+binASM/emit.o:	src/Assembler/emit.c inc/Assembler/emit.h | binASM
+	gcc $(CFLAGS) -c src/Assembler/emit.c -o binASM/emit.o
+
+binASM/Assembler_functions.o: src/Assembler/Assembler_functions.c inc/Assembler/Assembler_functions.h | binASM
+	gcc $(CFLAGS) -c src/Assembler/Assembler_functions.c -o binASM/Assembler_functions.o
+
+binASM/Assembler_structs.o: src/Assembler/Assembler_structs.c inc/Assembler/Assembler_structs.h | binASM
+	gcc $(CFLAGS) -c src/Assembler/Assembler_structs.c -o binASM/Assembler_structs.o
 
 binASM/CLI_Parser.o: src/Assembler/CLI_Parser.c inc/Assembler/CLI_Parser.h | binASM
 	gcc $(CFLAGS) -c src/Assembler/CLI_Parser.c -o binASM/CLI_Parser.o

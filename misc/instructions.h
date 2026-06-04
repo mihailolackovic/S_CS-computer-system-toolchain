@@ -1,6 +1,7 @@
 #ifndef INSTRUCTIONS_H
 #define INSTRUCTIONS_H
 
+#include <stdio.h>
 #include "keywords.h"
 
 typedef struct Expression Expression;
@@ -35,20 +36,19 @@ typedef enum{
   OPERATION_TYPE_CLOSE_BRACKET
 } Operation;
 
-typedef struct Expression{
-  Operand operand1;
-  Operand operand2;
-  long operand3;
-  long operand4;
-  long operand5;
-  long operand6;
-  Operation operation1;
-  Operation operation2;
-  Operation operation3;
-  Operation operation4;
-  Operation operation5;
-} Expression;   // ((operand1 operation1 operand3) operation2 operand4) operation3
-                // ((operand2 operation4 operand5) operation5 operand6)
+typedef struct  {
+  OperandType type;
+  char* symbol; //  value(symbol) = (symbol == NULL)? 1:value(symbol) 
+  long coeficient;
+  Operation operation;
+} Element;  //  operand (coefficient * symbol) Element
+
+
+typedef struct Expression {
+  Element* arr;
+  int arr_size;
+} Expression;
+
 typedef struct{
   char* label;
   char* function;
