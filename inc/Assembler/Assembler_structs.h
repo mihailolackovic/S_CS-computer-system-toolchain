@@ -5,11 +5,16 @@
 #include <stdint.h>
 #include <string.h>
 
+#define SYMBOL_TABLE_LENGHT 30
+#define SECTION_TABLE_LENGHT 10
+
 typedef enum{
   PASS,
   INVALID_OPERAND,
   DOUBLE_SYMBOL,
-  DOUBLE_SECTION
+  DOUBLE_SECTION,
+  EXTERN_SYMBOL_REDEFINITION,
+  SYMBOL_NOT_IN_SECTION
 } AsmERROR;
 
 ////////////////////////////////////////////////////////////
@@ -23,7 +28,7 @@ typedef struct{
   int lenght;
 } Section;
 
-AsmERROR addSection(Section section, Section* sectionTable);
+int addSection(Section section, Section* sectionTable);
 int findSection(char* section, Section* sectionTable);
 
 typedef enum{
@@ -44,7 +49,7 @@ typedef struct{
   int size;
   SymbolType type;
   SymbolBinding binding;
-  Section* section;
+  int section;
 } Symbol;
 
 AsmERROR addSymbol(Symbol symbol, Symbol* symbolTable);
@@ -106,5 +111,7 @@ typedef struct{
   char* name;
   Functions dir;
 } FunctionTableElement;
+
+int registerIndex(char* reg);
 
 #endif

@@ -123,7 +123,7 @@ arg
       Operand operand;
       operand.type = OPERAND_TYPE_SYMBOL;
       operand.string = $1;
-      operand.dereferance_flag = 0;
+      operand.dereferance_flag = 1;
 
       list[operand_count++] = operand;
     }
@@ -131,7 +131,7 @@ arg
       Operand operand;
       operand.type = OPERAND_TYPE_NUMBER;
       operand.number = $1;
-      operand.dereferance_flag = 0;
+      operand.dereferance_flag = 1;
 
       list[operand_count++] = operand;
     }
@@ -139,7 +139,7 @@ arg
       Operand operand;
       operand.type = OPERAND_TYPE_REGISTER;
       operand.reg = $2;
-      operand.dereferance_flag = 1;
+      operand.dereferance_flag = 0;
 
       list[operand_count++] = operand;
     }
@@ -163,7 +163,7 @@ arg
       Operand operand;
       operand.type = OPERAND_TYPE_NUMBER;
       operand.number = $2;
-      operand.dereferance_flag = 1;
+      operand.dereferance_flag = 0;
 
       list[operand_count++] = operand;
     }

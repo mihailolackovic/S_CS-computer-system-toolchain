@@ -6,7 +6,7 @@ CFLAGS = -g -Wall -Iinc/Assembler -Imisc
 
 cleanup:	assembler
 	sudo cp assembler /usr/local/bin/
-	rm -f *.o *.c binASM/*.o assembler
+	rm -f *.o *.c binASM/*.o
 	rm -f misc/parser.tab.c misc/parser.tab.h misc/lexer.c misc/lexer.h
 	rmdir binASM
 

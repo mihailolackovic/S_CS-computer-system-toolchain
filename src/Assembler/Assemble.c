@@ -1,9 +1,9 @@
 #include "../../inc/Assembler/Assemble.h"
-
+int debug = 0;
 void Assemble(Instruction* instructions, int instruction_count, FILE* output){
-  Symbol symbolTable[30] = {0};
-  Section sectionTable[10] = {0};
-  Section abs = {"*ABS*", 0, 0};
+  Symbol symbolTable[SYMBOL_TABLE_LENGHT] = {0};
+  Section sectionTable[SECTION_TABLE_LENGHT] = {0};
+  char* abs = "*ABS*";
   Assembler_state a = {output, 1, NULL, 0, symbolTable, sectionTable};
   int index = 0;
   AsmERROR error = PASS;
@@ -16,10 +16,15 @@ void Assemble(Instruction* instructions, int instruction_count, FILE* output){
     
     Functions func = lookup_function(ins->function);
     
-    if(error = execute_function(func, ins->operand_list, ins->operand_count, &a) != PASS)
+    if(ins->label)
+      if((error = labelSymbol(ins->label, &a)) != PASS)
+        handleEXIT(error);
+
+    if((error = execute_function(func, ins->operand_list, ins->operand_count, &a)) != PASS)
       handleEXIT(error);
 
-    printInstruction(*ins);
+    if(debug == 1)
+      printInstruction(*ins);
     
     if(index == instruction_count-1)  a.assembler_flag = 0;
     else                              index++;
@@ -30,7 +35,17 @@ void Assemble(Instruction* instructions, int instruction_count, FILE* output){
 };
 
 AsmERROR handleEXIT(AsmERROR error){
+  printf("_______ERROR_________ TYPE: %d ___________\n", error);
+  debug = 1;
+};
 
+void initSymbolsTable(Symbol* symbolTable){
+  for(int i = 0; i < SYMBOL_TABLE_LENGHT; i++)
+    symbolTable[i] = (Symbol){NULL, 0, 0, 0, 0, 0};
+};
+void initSectionTable(Section* sectionTable){
+  for(int i = 0; i < SYMBOL_TABLE_LENGHT; i++)
+    sectionTable[i] = (Section){NULL, 0, 0};
 };
 
 
@@ -84,11 +99,11 @@ typedef struct Assembler_state Assembler_state;
       break;
     }
   }
-  printf("\n");
+  printf("\n"); debug = 0;
 };
 
 void printSectionTable(Assembler_state* a){
-  for(int i = 0; i < 30; i++){
+  for(int i = 0; i < SECTION_TABLE_LENGHT; i++){
     if(a->sectionTable[i].name)
         printf("Name: %s | Size: %d | Offset: %d\n", a->sectionTable[i].name, a->sectionTable[i].lenght, a->sectionTable[i].base);
     else return;
@@ -96,7 +111,7 @@ void printSectionTable(Assembler_state* a){
 }
 
 void printSymsTable(Assembler_state* a){
-  for(int i = 0; i < 30; i++){
+  for(int i = 0; i < SYMBOL_TABLE_LENGHT; i++){
     if(a->symbolTable[i].name){
       char* type;
       switch (a->symbolTable[i].type)
@@ -118,7 +133,7 @@ void printSymsTable(Assembler_state* a){
         break;
       }
       printf("Name: %s| Value: %d | Size: %d | Type: %s | Binding: %s | Section: %s\n",
-      a->symbolTable[i].name, a->symbolTable[i].value, a->symbolTable[i].size, type, (a->symbolTable[i].binding)?"LOCAL":"GLOBAL", (a->symbolTable[i].section)?a->symbolTable[i].section->name:"UND");
+      a->symbolTable[i].name, a->symbolTable[i].value, a->symbolTable[i].size, type, (a->symbolTable[i].binding)?"LOCAL":"GLOBAL", (a->symbolTable[i].section<0)?"UND":a->sectionTable[a->symbolTable[i].section].name);
     }else
       return;
   }

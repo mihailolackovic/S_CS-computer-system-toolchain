@@ -6,6 +6,9 @@
 
 void Assemble(Instruction* instructions, int instruction_count, FILE* output);
 
+void initSymbolsTable(Symbol* symbolTable);
+void initSectionTable(Section* sectionTable);
+
 AsmERROR handleEXIT(AsmERROR error);
 
 void printInstruction(Instruction ins);
