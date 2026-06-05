@@ -7,7 +7,7 @@
 
 Functions lookup_function(char* function);
 
-void execute_function(Functions function, Operand* operand_list, int operand_count, Assembler_state* a);
+AsmERROR execute_function(Functions function, Operand* operand_list, int operand_count, Assembler_state* a);
 
 static const FunctionTableElement directiveTable[] = {
   {".global", DIRECTIVE_GLOBAL},

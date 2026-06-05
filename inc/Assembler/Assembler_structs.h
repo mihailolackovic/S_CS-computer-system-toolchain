@@ -8,7 +8,8 @@
 typedef enum{
   PASS,
   INVALID_OPERAND,
-  DOUBLE_SYMBOL
+  DOUBLE_SYMBOL,
+  DOUBLE_SECTION
 } AsmERROR;
 
 ////////////////////////////////////////////////////////////
@@ -23,9 +24,10 @@ typedef struct{
 } Section;
 
 AsmERROR addSection(Section section, Section* sectionTable);
-AsmERROR findSection(Section section, Section* sectionTable);
+int findSection(char* section, Section* sectionTable);
 
 typedef enum{
+  NOTYPE,
   DATA,
   FUNC,
   SECT,
@@ -46,7 +48,7 @@ typedef struct{
 } Symbol;
 
 AsmERROR addSymbol(Symbol symbol, Symbol* symbolTable);
-AsmERROR findSymbol(Symbol symbol, Symbol* symbolTable);
+int findSymbol(char* symbol, Symbol* symbolTable);
 
 typedef struct{
   FILE* output;

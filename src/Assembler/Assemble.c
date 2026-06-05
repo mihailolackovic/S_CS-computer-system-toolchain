@@ -1,31 +1,36 @@
 #include "../../inc/Assembler/Assemble.h"
 
 void Assemble(Instruction* instructions, int instruction_count, FILE* output){
-  Symbol* symbolTable[30] = {0};
-  Section* sectionTable[10] = {0};
+  Symbol symbolTable[30] = {0};
+  Section sectionTable[10] = {0};
   Section abs = {"*ABS*", 0, 0};
-  Assembler_state a;
-  a.output = output;
-  a.assembler_flag = 1;
-  a.current_section = &abs;
-  a.LC = 0;
-  a.symbolTable = symbolTable;
-  a.sectionTable = sectionTable; 
+  Assembler_state a = {output, 1, NULL, 0, symbolTable, sectionTable};
   int index = 0;
-
-  emit8(a.output, 0x535F454C463634);
-  emit8(a.output, 0x0000000000000000);
+  AsmERROR error = PASS;
+  
+  emit8(a.output, 0x535F454C463634);    // S_ELF signature
+  emit8(a.output, 0x0000000000000000);  // last byte = SectionHeaderTable ptr
+  
   while(a.assembler_flag){
     Instruction* ins = &instructions[index];
-  
+    
     Functions func = lookup_function(ins->function);
-    execute_function(func, ins->operand_list, ins->operand_count, &a);
-    //printInstruction(*ins);
+    
+    if(error = execute_function(func, ins->operand_list, ins->operand_count, &a) != PASS)
+      handleEXIT(error);
+
+    printInstruction(*ins);
+    
     if(index == instruction_count-1)  a.assembler_flag = 0;
     else                              index++;
   }
+  printSectionTable(&a);
   printSymsTable(&a);
   return;
+};
+
+AsmERROR handleEXIT(AsmERROR error){
+
 };
 
 
@@ -82,12 +87,23 @@ typedef struct Assembler_state Assembler_state;
   printf("\n");
 };
 
+void printSectionTable(Assembler_state* a){
+  for(int i = 0; i < 30; i++){
+    if(a->sectionTable[i].name)
+        printf("Name: %s | Size: %d | Offset: %d\n", a->sectionTable[i].name, a->sectionTable[i].lenght, a->sectionTable[i].base);
+    else return;
+  }
+}
+
 void printSymsTable(Assembler_state* a){
-  for(int i = 0; i < 20; i++){
+  for(int i = 0; i < 30; i++){
     if(a->symbolTable[i].name){
       char* type;
       switch (a->symbolTable[i].type)
       {
+      case NOTYPE:
+        type = "NOTYPE";
+        break;
       case DATA:
         type = "DATA";
         break;
@@ -102,7 +118,7 @@ void printSymsTable(Assembler_state* a){
         break;
       }
       printf("Name: %s| Value: %d | Size: %d | Type: %s | Binding: %s | Section: %s\n",
-      a->symbolTable[i].name, a->symbolTable[i].value, a->symbolTable[i].size, type, (a->symbolTable[i].binding)?"LOCAL":"GLOBAL", a->symbolTable[i].section->name);
+      a->symbolTable[i].name, a->symbolTable[i].value, a->symbolTable[i].size, type, (a->symbolTable[i].binding)?"LOCAL":"GLOBAL", (a->symbolTable[i].section)?a->symbolTable[i].section->name:"UND");
     }else
       return;
   }
