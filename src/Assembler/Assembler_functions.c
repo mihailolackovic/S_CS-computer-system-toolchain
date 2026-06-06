@@ -151,12 +151,12 @@ AsmERROR execute_function(Functions function, Operand* operand_list, int operand
     return PASS;
 
   case DIRECTIVE_END:
-     if(operand_count != 0) return INVALID_OPERAND;
+    if(operand_count != 0) return INVALID_OPERAND;
     a->assembler_flag = 0;
     index = findSection(a->current_section, a->sectionTable);
     if(index != -1)
       a->sectionTable[index].lenght = a->LC;
     return PASS;
   default:
-  break;}
+    break;}
 };

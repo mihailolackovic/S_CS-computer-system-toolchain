@@ -52,37 +52,46 @@ void initSectionTable(Section* sectionTable){
 void printInstruction(Instruction ins){
   printf("%s  ", (ins.label)?ins.label:"NO_LABEL");
   printf("%s  ", ins.function);
+  char c;
   for(int j = 0; j < ins.operand_count; j++){
-    switch (ins.operand_list[j].type)
-    {
+    switch (ins.operand_list[j].type){
     case OPERAND_TYPE_EXPRESSION:
-      for(int k = 0; k < ins.operand_list[j].expression->arr_size; k++){
-        char c = ' ';
-        switch (ins.operand_list[j].expression->arr[k].operation)
-        {
-        case OPERATION_TYPE_ADD:
-          c = '+';
+      printf("(");
+      for(int i = 0; i < ins.operand_list[j].expression->arr_size; i++){
+        switch (ins.operand_list[j].expression->arr[i].type){
+        case ITEM_NUMBER:
+          printf(" %d ", ins.operand_list[j].expression->arr[i].number);
           break;
-        case OPERATION_TYPE_SUB:
-          c = '-';
+        case ITEM_SYMBOL:
+          printf(" %s ", ins.operand_list[j].expression->arr[i].symbol);
           break;
-        case OPERATION_TYPE_MUL:
-          c = '*';
+        case ITEM_REGISTER:
+          printf(" \%%s ", ins.operand_list[j].expression->arr[i].reg);
           break;
-        case OPERATION_TYPE_DIV:
-          c = '/';
+        case ITEM_OPERATION:
+          switch(ins.operand_list[j].expression->arr[i].op){
+          case 1:
+            c = '+';
+            break;
+          case 2:
+            c = '-';
+            break;
+          case 3:
+            c = '*';
+            break;
+          case 4:
+            c = '/';
+            break;
+          }
+          printf(" %c ", c);
           break;
-        case OPERATION_TYPE_NONE:
-          c = ' ';
+        default:
           break;
         }
-        if(ins.operand_list[j].expression->arr[k].symbol)
-          printf("(%d*%s)%c",ins.operand_list[j].expression->arr[k].coeficient,ins.operand_list[j].expression->arr[k].symbol, c);
-        else
-          printf("%d%c",ins.operand_list[j].expression->arr[k].coeficient,c);
       }
-typedef struct Assembler_state Assembler_state;
+      printf(")");
       break;
+    typedef struct Assembler_state Assembler_state;
     case OPERAND_TYPE_STRING:
       printf("%s  ", ins.operand_list[j].string);
       break;
@@ -114,8 +123,7 @@ void printSymsTable(Assembler_state* a){
   for(int i = 0; i < SYMBOL_TABLE_LENGHT; i++){
     if(a->symbolTable[i].name){
       char* type;
-      switch (a->symbolTable[i].type)
-      {
+      switch (a->symbolTable[i].type){
       case NOTYPE:
         type = "NOTYPE";
         break;

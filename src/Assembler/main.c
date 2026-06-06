@@ -34,7 +34,7 @@ int main(int argc, const char** argv){
     perror("fopen");
     return;
   }
-
+  
   Assemble(instructions, instruction_count, output);
 
   free(files);

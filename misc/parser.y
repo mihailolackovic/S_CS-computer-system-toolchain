@@ -17,9 +17,9 @@ char* function = NULL;
 int operand_count = 0;
 Operand list[10];
 
-StackItem stack[20];
+StackItem stack[128];
 int stack_counter = 1;
-//  ISNTRUCTION PARAMS
+//  INSTRUCTION
 
 Instruction *instructions = NULL;
 int instruction_count = 0;
@@ -105,7 +105,8 @@ arg
 
       Operand operand;
       operand.type = OPERAND_TYPE_EXPRESSION;
-      operand.expression = create_expression(stack);
+      operand.expression = malloc(sizeof(Expression));
+      *operand.expression = create_expression(stack);
       operand.dereferance_flag = 0;
 
       list[operand_count++] = operand;
@@ -216,33 +217,7 @@ relative_address
 
       list[operand_count++] = operand;
     }
-  | IDN_OPEN IND_REG REGISTER ADD NUMBER IDN_CLOSE  {
-      Element element1;
-      element1.type = OPERAND_TYPE_REGISTER;
-      element1.symbol = $3;
-      element1.coeficient = 1;
-      element1.operation = OPERATION_TYPE_ADD;
-
-      Element element2;
-      element2.type = OPERAND_TYPE_NUMBER;
-      element2.symbol = NULL;
-      element2.coeficient = $5;
-      element2.operation = OPERATION_TYPE_NONE;
-
-      Expression expression;
-      expression.arr = malloc(2*sizeof(Element));
-      expression.arr[0] = element1;
-      expression.arr[1] = element2;
-      expression.arr_size = 2;
-
-      Operand operand;
-      operand.type = OPERAND_TYPE_EXPRESSION;
-      operand.expression = malloc(sizeof(Expression));
-      memcpy(operand.expression,&expression, sizeof(Expression));
-      operand.dereferance_flag = 1;
-
-      list[operand_count++] = operand;
-    }
+  | IDN_OPEN IND_REG REGISTER ADD NUMBER IDN_CLOSE
   | IDN_OPEN IND_REG REGISTER ADD SYMBOL IDN_CLOSE
   | IDN_OPEN IND_REG REGISTER SUB NUMBER IDN_CLOSE
   | IDN_OPEN IND_REG REGISTER SUB SYMBOL IDN_CLOSE

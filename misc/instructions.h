@@ -3,7 +3,6 @@
 
 #include <stdio.h>
 #include "keywords.h"
-
 typedef struct Expression Expression;
 
 typedef enum{
@@ -26,26 +25,8 @@ typedef struct{
   int dereferance_flag;
 } Operand;
 
-typedef enum{
-  OPERATION_TYPE_NONE,
-  OPERATION_TYPE_ADD,
-  OPERATION_TYPE_SUB,
-  OPERATION_TYPE_MUL,
-  OPERATION_TYPE_DIV,
-  OPERATION_TYPE_OPEN_BRACKET,
-  OPERATION_TYPE_CLOSE_BRACKET
-} Operation;
-
-typedef struct  {
-  OperandType type;
-  char* symbol; //  value(symbol) = (symbol == NULL)? 1:value(symbol) 
-  long coeficient;
-  Operation operation;
-} Element;  //  operand (coefficient * symbol) Element
-
-
 typedef struct Expression {
-  Element* arr;
+  StackItem* arr;
   int arr_size;
 } Expression;
 
@@ -56,6 +37,11 @@ typedef struct{
   int operand_count;
 } Instruction;
 
-Expression* create_expression(StackItem* stack);
+Expression create_expression(StackItem* stack);
+
+StackItem pop(Stack* stack);
+void push(Stack* stack, StackItem item);
+int is_empty(Stack* stack);
+StackItem peek(Stack* stack);
 
 #endif

@@ -2,4 +2,4 @@
 2)  Lekser error handeling
 3)  Parser error handeling
 4)  Const in CLI_Parser
-5)  create_expression not implemented
+5)  create_expression iskomentarisati

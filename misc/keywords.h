@@ -21,14 +21,30 @@ typedef enum{
   ITEM_OPERATION
 } ItemType;
 
+typedef enum{
+  OPERATION_TYPE_NONE,
+  OPERATION_TYPE_ADD,
+  OPERATION_TYPE_SUB,
+  OPERATION_TYPE_MUL,
+  OPERATION_TYPE_DIV,
+  OPERATION_TYPE_OPEN_BRACKET,
+  OPERATION_TYPE_CLOSE_BRACKET
+} Operation;
+
 typedef struct{
   ItemType type;
   union{
     long number;
     char* symbol;
     char* reg;
-    long op;
+    Operation op;
   };
 } StackItem;
+
+typedef struct{
+  StackItem* stack;
+  int top;
+  int size;
+} Stack;
 
 #endif
