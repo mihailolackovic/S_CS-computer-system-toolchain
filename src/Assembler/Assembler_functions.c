@@ -26,7 +26,7 @@ AsmERROR labelSymbol(char* label, Assembler_state* a){
   int symbolIndex = findSymbol(label, a->sectionTable);
 
   if(symbolIndex == -1){
-    Symbol sym = (Symbol){label, a->LC, 0, NOTYPE, LOCAL, sectionIndex};
+    Symbol sym = (Symbol){label, a->LC, 0, NOTYPE, LOCAL, sectionIndex, NULL};
     addSymbol(sym , a->symbolTable);
   }
   else{
@@ -40,8 +40,56 @@ AsmERROR labelSymbol(char* label, Assembler_state* a){
 
 AsmERROR execute_function(Functions function, Operand* operand_list, int operand_count, Assembler_state* a){
   int index;
+  uint8_t OC = 0, M = 0, regA = 0, regB = 0, regC = 0;
   uint8_t byte = 0x00;
+  uint64_t eightbyte = 0x00;
   switch(function)  {
+  case OPCODE_INT:
+    if(operand_count != 0) return INVALID_OPERAND;
+    instructionEmit(a->output, (Ins_emit){0x1, 0, 0, 0, 0, 0});
+    a->LC += 4;
+    return PASS;
+
+  case OPCODE_RET:
+    if(operand_count != 0) return INVALID_OPERAND;
+    instructionEmit(a->output, (Ins_emit){0x9, 3, 15, 14, 0, 0x4});
+    a->LC += 4;
+    return PASS;
+
+  case OPCODE_IRET:
+    if(operand_count != 0) return INVALID_OPERAND;
+    instructionEmit(a->output, (Ins_emit){0x9, 3, 0, 14, 0, 0x4});
+    instructionEmit(a->output, (Ins_emit){0x9, 3, 15, 14, 0, 0x4});
+    a->LC += 8;
+    return PASS;
+
+  case OPCODE_CSRRD:
+  case OPCODE_CSRWR:
+  case OPCODE_XCHG:
+    if(operand_count != 2) return INVALID_OPERAND;
+    if(operand_list[0].type != OPERAND_TYPE_REGISTER) return INVALID_OPERAND;
+    if(operand_list[1].type != OPERAND_TYPE_REGISTER) return INVALID_OPERAND;
+    if(function == OPCODE_XCHG)
+      instructionEmit(a->output, (Ins_emit){0x4, 0, 0 ,registerIndex(operand_list[1].reg), registerIndex(operand_list[0].reg), 0, 0});
+    else if(function == OPCODE_CSRRD)
+      instructionEmit(a->output, (Ins_emit){0x9, 0, registerIndex(operand_list[1].reg), registerIndex(operand_list[0].reg), 0, 0, 0});
+    else if(function == OPCODE_CSRWR)
+      instructionEmit(a->output, (Ins_emit){0x9, 4, registerIndex(operand_list[1].reg), registerIndex(operand_list[0].reg), 0, 0, 0});
+    a->LC += 4;
+    return PASS;
+
+  case OPCODE_POP:
+    if(operand_count != 1) return INVALID_OPERAND;
+    if(operand_list[0].type != OPERAND_TYPE_REGISTER) return INVALID_OPERAND;
+    instructionEmit(a->output, (Ins_emit){0x9, 3, registerIndex(operand_list[0].reg), 14, 0, 0x4});
+    a->LC += 4;
+    return PASS;
+  case OPCODE_PUSH:
+    if(operand_count != 1) return INVALID_OPERAND;
+    if(operand_list[0].type != OPERAND_TYPE_REGISTER) return INVALID_OPERAND;
+    instructionEmit(a->output, (Ins_emit){0x8, 1, 14, 0, registerIndex(operand_list[0].reg), 0xFFFC});
+    a->LC += 4;
+    return PASS;
   case OPCODE_SHR:
     byte = 0x01;
   case OPCODE_SHL:
@@ -78,41 +126,81 @@ AsmERROR execute_function(Functions function, Operand* operand_list, int operand
     return PASS;
 
   case OPCODE_BGT:
-    if(byte == 0x00)  byte = 0x03;
+    if(M == 0x00)  M = 0x03;
   case OPCODE_BNE:
-    if(byte == 0x00)  byte = 0x02;
+    if(M == 0x00)  M = 0x02;
   case OPCODE_BEQ:
-    if(byte == 0x00)  byte = 0x01;
+    if(M == 0x00)  M = 0x01;
+    if(operand_count != 3)  return INVALID_OPERAND;
+    if(operand_list[2].dereferance_flag != 1) return INVALID_OPERAND;
+    OC = 0x3;
+    regA = 0;
+    regB = registerIndex(operand_list[0].reg);
+    regC = registerIndex(operand_list[1].reg);
   case OPCODE_JMP:
-    if(operand_list->type==OPERAND_TYPE_EXPRESSION) byte += 8;
-    if(operand_count != 1)  return INVALID_OPERAND;
+    if(function == OPCODE_JMP) {
+      OC = 0x3;
+      regA = 0;
+      regB = 0;
+      regC = 0;
+      if(operand_count != 1)  return INVALID_OPERAND;
+    }
+    if(operand_list[(function==OPCODE_JMP)?0:2].type==OPERAND_TYPE_NUMBER){
+      if(operand_list[(function==OPCODE_JMP)?0:2].number > 0x7FF ||
+         operand_list[(function==OPCODE_JMP)?0:2].number < -(0x7FF + 1))
+        return JUMP_OVERFLOW;
+      instructionEmit(a->output, (Ins_emit){OC,M,regA,regB,regC,operand_list[(function==OPCODE_JMP)?0:2].number} );
+    }
+    if(operand_list[(function==OPCODE_JMP)?0:2].type==OPERAND_TYPE_SYMBOL){
+      index = findSymbol(operand_list[(function==OPCODE_JMP)?0:2].symbol, a->symbolTable);
+      if(index == -1) {
+        Fixup* fix = malloc(sizeof(Fixup));
+        *fix = (Fixup){ftell(a->output)+4, NULL};
+        addSymbol((Symbol){operand_list[(function==OPCODE_JMP)?0:2].symbol, 0, 0, NOTYPE, LOCAL, -1, fix}, a->symbolTable);
+      }
+      else if(a->symbolTable[index].section < 0){
+        Fixup *new_fixup = malloc(sizeof(Fixup));       //
+        new_fixup->offset = ftell(a->output) + 4;       //  Insertujemo ulancanu listu na
+        new_fixup->next = a->symbolTable[index].fixup;  //  glavu liste posto nam je nebitan
+        a->symbolTable[index].fixup = new_fixup;        //  poredak
+      }
+      instructionEmit(a->output, (Ins_emit){OC,M,regA,regB,regC,a->symbolTable[(index==-1)?0:index].value});
+    }
+    a->LC += 4;
+    return PASS;
 
+  case OPCODE_CALL:
+  case OPCODE_LD:
+  case OPCODE_ST:
+  return PASS;
 
   case OPCODE_SUB:
-    byte = 0x01;
+    M = 0x01;
   case OPCODE_MUL:
-    if(byte == 0x00)  byte = 0x02;
+    if(M == 0x00)  M = 0x02;
   case OPCODE_DIV:
-    if(byte == 0x00)  byte = 0x03;
+    if(M == 0x00)  M = 0x03;
   case OPCODE_ADD:
     if(operand_count != 2)  return INVALID_OPERAND;
     if(operand_list[0].type != OPERAND_TYPE_REGISTER || operand_list[0].dereferance_flag != 0) return INVALID_OPERAND;
     if(operand_list[1].type != OPERAND_TYPE_REGISTER || operand_list[0].dereferance_flag != 0) return INVALID_OPERAND;
-    emit4(a->output, 0x50000000+(byte << (6*4))+
-      (registerIndex(operand_list[0].reg) << (5*4)) + (registerIndex(operand_list[0].reg) << (4*4))
-      + (registerIndex(operand_list[1].reg) << (3*4)));
+    regA = regB = registerIndex(operand_list[0].reg);
+    regC = registerIndex(operand_list[1].reg);
+    instructionEmit(a->output, (Ins_emit) {0x5, M, regA, regB, regC, 0});
     a->LC += 4;
     return PASS;
 
-  case OPCODE_RET:
-    if(byte == 0x00)  byte = 0x40;
-  case OPCODE_IRET:
-    if(byte == 0x00)  byte = 0x20;
   case OPCODE_HALT:
     if(operand_count != 0)  return INVALID_OPERAND;
-    emit4(a->output, byte << (3*8));
+    emit4(a->output, 0);
     a->LC += 4;
     return PASS;
+
+  case DIRECTIVE_EQU:
+  case DIRECTIVE_ASCII:
+  case DIRECTIVE_WORD:
+  case DIRECTIVE_SKIP:
+  return PASS;
 
   case DIRECTIVE_SECTION:
     if(operand_count != 1) return INVALID_OPERAND;
@@ -144,9 +232,10 @@ AsmERROR execute_function(Functions function, Operand* operand_list, int operand
       if(operand_list[i].type != OPERAND_TYPE_SYMBOL) return INVALID_OPERAND;
       Symbol sym = {operand_list[i].symbol, 0, 0, NOTYPE, GLOBAL, -2};
       index = findSymbol(sym.name, a->symbolTable);
-      if(index == -1) addSymbol(sym, a->symbolTable);
-      else 
-        return EXTERN_SYMBOL_REDEFINITION;
+      if(index != -1) return EXTERN_SYMBOL_REDEFINITION;
+      
+      addSymbol(sym, a->symbolTable);
+      a->symbolTable[index+1].binding = EXTERN;
     }
     return PASS;
 

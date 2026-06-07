@@ -1,12 +1,10 @@
 #ifndef ASSEMBLER_STRUCTS_H
 #define ASSEMBLER_STRUCTS_H
 
+#include "../../misc/instructions.h"
 #include <stdio.h>
 #include <stdint.h>
 #include <string.h>
-
-#define SYMBOL_TABLE_LENGHT 30
-#define SECTION_TABLE_LENGHT 10
 
 typedef enum{
   PASS,
@@ -14,13 +12,21 @@ typedef enum{
   DOUBLE_SYMBOL,
   DOUBLE_SECTION,
   EXTERN_SYMBOL_REDEFINITION,
-  SYMBOL_NOT_IN_SECTION
+  SYMBOL_NOT_IN_SECTION,
+  JUMP_OVERFLOW
 } AsmERROR;
+
+typedef struct Fixup{
+  int offset;
+  struct Fixup* next;
+} Fixup;
 
 ////////////////////////////////////////////////////////////
 //  SYMBOLS  ///////////////////////////////////////////////
 ////////////////////////////////////////////////////////////
 
+#define SYMBOL_TABLE_LENGHT 30
+#define SECTION_TABLE_LENGHT 10
 
 typedef struct{
   char* name;
@@ -39,8 +45,9 @@ typedef enum{
   SRC
 } SymbolType;
 typedef enum{
+  LOCAL,
   GLOBAL,
-  LOCAL
+  EXTERN
 } SymbolBinding;
 
 typedef struct{
@@ -50,10 +57,13 @@ typedef struct{
   SymbolType type;
   SymbolBinding binding;
   int section;
+  Fixup* fixup;
 } Symbol;
 
 AsmERROR addSymbol(Symbol symbol, Symbol* symbolTable);
 int findSymbol(char* symbol, Symbol* symbolTable);
+
+////////////////////////////////////////////////////////////
 
 typedef struct{
   FILE* output;
@@ -112,6 +122,31 @@ typedef struct{
   Functions dir;
 } FunctionTableElement;
 
+////////////////////////////////////////////////////////////
+
 int registerIndex(char* reg);
+
+typedef struct ForwardDeclaration{
+  struct ForwardDeclaration* next;
+  Expression* expression;
+  char* symbol;
+} ForwardDeclaration;
+
+////////////////////////////////////////////////////////////
+//  RELOC  /////////////////////////////////////////////////
+////////////////////////////////////////////////////////////
+
+typedef enum{
+  R_ABS_12,
+  R_PC_12
+} RelocType;
+
+typedef struct{
+  char* section;
+  char* symbol;
+  RelocType type;
+  int offset;
+  int addend;
+} Relocation;
 
 #endif

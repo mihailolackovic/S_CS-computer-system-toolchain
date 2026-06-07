@@ -5,6 +5,15 @@
 cool1:
 .global a, c, d , e
 .section text
+.equ [%r1 + 0x10]
+.equ [%r1 + a1239812398]
+  push %r1
+  beq %r1, %r2, a
+  jmp 0x099
+  jmp 0x9999
+  jmp 999
+  jmp a
+  jmp labelyea
   not %r1
   and %r1, %r2
   or %r1, %r2

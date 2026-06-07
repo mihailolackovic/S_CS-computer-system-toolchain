@@ -217,14 +217,87 @@ relative_address
 
       list[operand_count++] = operand;
     }
-  | IDN_OPEN IND_REG REGISTER ADD NUMBER IDN_CLOSE
-  | IDN_OPEN IND_REG REGISTER ADD SYMBOL IDN_CLOSE
-  | IDN_OPEN IND_REG REGISTER SUB NUMBER IDN_CLOSE
-  | IDN_OPEN IND_REG REGISTER SUB SYMBOL IDN_CLOSE
+  | IDN_OPEN IND_REG REGISTER ADD NUMBER IDN_CLOSE{
+      StackItem* si = malloc(sizeof(StackItem)*3);
+      si[0].type = ITEM_REGISTER;
+      si[0].reg = $3;
+
+      si[1].type = ITEM_NUMBER;
+      si[1].number = $5;
+
+      si[2].type = ITEM_OPERATION;
+      si[2].op = OPERATION_TYPE_ADD;
+
+      Operand operand;
+      operand.type = OPERAND_TYPE_EXPRESSION;
+      operand.expression = malloc(sizeof(Expression));
+      *operand.expression = (Expression){si, 3}; 
+      operand.dereferance_flag = 1;
+
+      list[operand_count++] = operand;
+    }
+  | IDN_OPEN IND_REG REGISTER ADD SYMBOL IDN_CLOSE{
+      StackItem* si = malloc(sizeof(StackItem)*3);
+      si[0].type = ITEM_REGISTER;
+      si[0].reg = $3;
+
+      si[1].type = ITEM_SYMBOL;
+      si[1].symbol = $5;
+
+      si[2].type = ITEM_OPERATION;
+      si[2].op = OPERATION_TYPE_ADD;
+
+      Operand operand;
+      operand.type = OPERAND_TYPE_EXPRESSION;
+      operand.expression = malloc(sizeof(Expression));
+      *operand.expression = (Expression){si, 3}; 
+      operand.dereferance_flag = 1;
+
+      list[operand_count++] = operand;
+    }
+  | IDN_OPEN IND_REG REGISTER SUB NUMBER IDN_CLOSE{
+      StackItem* si = malloc(sizeof(StackItem)*3);
+      si[0].type = ITEM_REGISTER;
+      si[0].reg = $3;
+
+      si[1].type = ITEM_NUMBER;
+      si[1].number = $5;
+
+      si[2].type = ITEM_OPERATION;
+      si[2].op = OPERATION_TYPE_SUB;
+
+      Operand operand;
+      operand.type = OPERAND_TYPE_EXPRESSION;
+      operand.expression = malloc(sizeof(Expression));
+      *operand.expression = (Expression){si, 3}; 
+      operand.dereferance_flag = 1;
+
+      list[operand_count++] = operand;
+    }
+  | IDN_OPEN IND_REG REGISTER SUB SYMBOL IDN_CLOSE{
+      StackItem* si = malloc(sizeof(StackItem)*3);
+      si[0].type = ITEM_REGISTER;
+      si[0].reg = $3;
+
+      si[1].type = ITEM_SYMBOL;
+      si[1].symbol = $5;
+
+      si[2].type = ITEM_OPERATION;
+      si[2].op = OPERATION_TYPE_SUB;
+
+      Operand operand;
+      operand.type = OPERAND_TYPE_EXPRESSION;
+      operand.expression = malloc(sizeof(Expression));
+      *operand.expression = (Expression){si, 3}; 
+      operand.dereferance_flag = 1;
+
+      list[operand_count++] = operand;
+    }
   ;
 
 %%
 
 void yyerror(const char *s) {
-    fprintf(stderr, "Parse error: %s\n", s);
+  fprintf(stderr, "Parse error: %s\n", s);
+  exit(1);
 }

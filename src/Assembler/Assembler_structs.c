@@ -26,6 +26,7 @@ AsmERROR addSymbol(Symbol symbol, Symbol* symbolTable){
   for(int i = 0; i < SYMBOL_TABLE_LENGHT; i++){
     if(symbolTable[i].name){
       if(strcmp(symbol.name, symbolTable[i].name) == 0) return DOUBLE_SYMBOL;
+      if(symbol.type == EXTERN) return EXTERN_SYMBOL_REDEFINITION;
     }else  {
       symbolTable[i] = symbol;
       return PASS;

@@ -1,7 +1,6 @@
 #ifndef ASSEMBLER_FUNCTIONS_H
 #define ASSEMBLER_FUNCTIONS_H
 
-#include "../../misc/instructions.h"
 #include "../../inc/Assembler/emit.h"
 #include "Assembler_structs.h"
 

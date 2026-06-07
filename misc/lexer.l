@@ -7,10 +7,13 @@
 
 #include "parser.tab.h"
 
+char* ptr;
 %}
 
 %option header-file="misc/lexer.h"
+%option yylineno
 
+invalid [;|.]
 digit [0-9]
 letter_lower [a-z]
 letter_upper [A-Z]
@@ -43,10 +46,9 @@ string {string_parts}+
 "(" { return BRAKET_OPEN; }
 ")" { return BRAKET_CLOSE; }
 
-
 "."{word}+ { yylval.str = strdup(yytext); return DIRECTIVE; }
 
-{word}: { yylval.str = strdup(yytext); return LABEL; }
+{word}: { yylval.str = strdup(strndup(yytext, strlen(yytext)-1)); return LABEL; }
 
 {number}  { yylval.number = atoi(yytext); return NUMBER; }
 {hex_number}  { yylval.number = strtol(yytext, NULL, 16); return NUMBER; }
@@ -66,4 +68,9 @@ string {string_parts}+
       break;
   }
 }
+
+{invalid}+ {     
+  char buf[128];
+  snprintf(buf, sizeof(buf), "Invalid token at line %d", yylineno);
+  yyerror(buf);}
 %%

@@ -19,7 +19,7 @@ int main(int argc, const char** argv){
     printf("Error unknown option");
     return 0;
   }
-  
+
   yyin = fopen(files->input, "r");
 
   if(!yyin){
@@ -37,6 +37,8 @@ int main(int argc, const char** argv){
   
   Assemble(instructions, instruction_count, output);
 
+  fclose(yyin);
+  fclose(output);
   free(files);
   return 0;
 }

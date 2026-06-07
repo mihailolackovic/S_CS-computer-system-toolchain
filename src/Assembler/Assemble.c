@@ -1,6 +1,7 @@
 #include "../../inc/Assembler/Assemble.h"
 int debug = 0;
 void Assemble(Instruction* instructions, int instruction_count, FILE* output){
+
   Symbol symbolTable[SYMBOL_TABLE_LENGHT] = {0};
   Section sectionTable[SECTION_TABLE_LENGHT] = {0};
   char* abs = "*ABS*";
@@ -66,7 +67,7 @@ void printInstruction(Instruction ins){
           printf(" %s ", ins.operand_list[j].expression->arr[i].symbol);
           break;
         case ITEM_REGISTER:
-          printf(" \%%s ", ins.operand_list[j].expression->arr[i].reg);
+          printf(" %%%s ", ins.operand_list[j].expression->arr[i].reg);
           break;
         case ITEM_OPERATION:
           switch(ins.operand_list[j].expression->arr[i].op){
@@ -141,7 +142,7 @@ void printSymsTable(Assembler_state* a){
         break;
       }
       printf("Name: %s| Value: %d | Size: %d | Type: %s | Binding: %s | Section: %s\n",
-      a->symbolTable[i].name, a->symbolTable[i].value, a->symbolTable[i].size, type, (a->symbolTable[i].binding)?"LOCAL":"GLOBAL", (a->symbolTable[i].section<0)?"UND":a->sectionTable[a->symbolTable[i].section].name);
+      a->symbolTable[i].name, a->symbolTable[i].value, a->symbolTable[i].size, type, (a->symbolTable[i].binding == 0)?"LOCAL":"GLOBAL", (a->symbolTable[i].section<0)?"UND":a->sectionTable[a->symbolTable[i].section].name);
     }else
       return;
   }
