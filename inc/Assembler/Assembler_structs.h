@@ -8,13 +8,18 @@
 
 typedef enum{
   PASS,
+  TABLE_FULL,
   INVALID_OPERAND,
   DOUBLE_SYMBOL,
   DOUBLE_SECTION,
   EXTERN_SYMBOL_REDEFINITION,
   SYMBOL_NOT_IN_SECTION,
-  JUMP_OVERFLOW
+  NUMBER_OVERFLOW
 } AsmERROR;
+
+#define SYMBOL_TABLE_LENGHT 128
+#define SECTION_TABLE_LENGHT 32
+#define RELOC_TABLE_LENGHT 128
 
 typedef struct Fixup{
   int offset;
@@ -22,11 +27,31 @@ typedef struct Fixup{
 } Fixup;
 
 ////////////////////////////////////////////////////////////
-//  SYMBOLS  ///////////////////////////////////////////////
+//  RELOC  /////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////
 
-#define SYMBOL_TABLE_LENGHT 30
-#define SECTION_TABLE_LENGHT 10
+typedef enum{
+  UNINITIALISED,
+  R_ABS_12,
+  R_PC_12,
+  R_ABS_32,
+  R_PC_32
+} RelocType;
+
+typedef struct{
+  int section;
+  int symbol;
+  RelocType type;
+  int offset;
+  int addend;
+  int multiplier;
+} Relocation;
+
+AsmERROR addRelocation(Relocation relocation, Relocation* relocationTable);
+
+////////////////////////////////////////////////////////////
+//  SECTION  ///////////////////////////////////////////////
+////////////////////////////////////////////////////////////
 
 typedef struct{
   char* name;
@@ -36,6 +61,10 @@ typedef struct{
 
 int addSection(Section section, Section* sectionTable);
 int findSection(char* section, Section* sectionTable);
+
+////////////////////////////////////////////////////////////
+//  SYMBOLS  ///////////////////////////////////////////////
+////////////////////////////////////////////////////////////
 
 typedef enum{
   NOTYPE,
@@ -68,10 +97,11 @@ int findSymbol(char* symbol, Symbol* symbolTable);
 typedef struct{
   FILE* output;
   int assembler_flag;
-  char* current_section;
   int LC;
+  char* current_section;
   Symbol* symbolTable;
   Section* sectionTable;
+  Relocation* relocTable;
 } Assembler_state;
 
 ////////////////////////////////////////////////////////////
@@ -131,22 +161,5 @@ typedef struct ForwardDeclaration{
   Expression* expression;
   char* symbol;
 } ForwardDeclaration;
-
-////////////////////////////////////////////////////////////
-//  RELOC  /////////////////////////////////////////////////
-////////////////////////////////////////////////////////////
-
-typedef enum{
-  R_ABS_12,
-  R_PC_12
-} RelocType;
-
-typedef struct{
-  char* section;
-  char* symbol;
-  RelocType type;
-  int offset;
-  int addend;
-} Relocation;
 
 #endif

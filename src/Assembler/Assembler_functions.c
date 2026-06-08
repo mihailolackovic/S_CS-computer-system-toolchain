@@ -23,7 +23,7 @@ AsmERROR labelSymbol(char* label, Assembler_state* a){
   if(sectionIndex < 0)
     return SYMBOL_NOT_IN_SECTION;
 
-  int symbolIndex = findSymbol(label, a->sectionTable);
+  int symbolIndex = findSymbol(label, a->symbolTable);
 
   if(symbolIndex == -1){
     Symbol sym = (Symbol){label, a->LC, 0, NOTYPE, LOCAL, sectionIndex, NULL};
@@ -32,8 +32,10 @@ AsmERROR labelSymbol(char* label, Assembler_state* a){
   else{
     if(a->symbolTable[symbolIndex].section >= 0)
       return DOUBLE_SYMBOL;
+    if(a->symbolTable[symbolIndex].section == -2)
+      return EXTERN_SYMBOL_REDEFINITION;
     a->symbolTable[symbolIndex].value = a->LC;
-    a->symbolTable[symbolIndex].section = a->current_section;
+    a->symbolTable[symbolIndex].section = findSection(a->current_section, a->sectionTable);
   }
   return PASS;
 };
@@ -132,7 +134,7 @@ AsmERROR execute_function(Functions function, Operand* operand_list, int operand
   case OPCODE_BEQ:
     if(M == 0x00)  M = 0x01;
     if(operand_count != 3)  return INVALID_OPERAND;
-    if(operand_list[2].dereferance_flag != 1) return INVALID_OPERAND;
+    if(operand_list[2].dereferance_flag == 0) return INVALID_OPERAND;
     OC = 0x3;
     regA = 0;
     regB = registerIndex(operand_list[0].reg);
@@ -144,11 +146,12 @@ AsmERROR execute_function(Functions function, Operand* operand_list, int operand
       regB = 0;
       regC = 0;
       if(operand_count != 1)  return INVALID_OPERAND;
+      if(operand_list[0].dereferance_flag == 0) return INVALID_OPERAND;
     }
     if(operand_list[(function==OPCODE_JMP)?0:2].type==OPERAND_TYPE_NUMBER){
       if(operand_list[(function==OPCODE_JMP)?0:2].number > 0x7FF ||
          operand_list[(function==OPCODE_JMP)?0:2].number < -(0x7FF + 1))
-        return JUMP_OVERFLOW;
+        return NUMBER_OVERFLOW;
       instructionEmit(a->output, (Ins_emit){OC,M,regA,regB,regC,operand_list[(function==OPCODE_JMP)?0:2].number} );
     }
     if(operand_list[(function==OPCODE_JMP)?0:2].type==OPERAND_TYPE_SYMBOL){
@@ -164,15 +167,185 @@ AsmERROR execute_function(Functions function, Operand* operand_list, int operand
         new_fixup->next = a->symbolTable[index].fixup;  //  glavu liste posto nam je nebitan
         a->symbolTable[index].fixup = new_fixup;        //  poredak
       }
-      instructionEmit(a->output, (Ins_emit){OC,M,regA,regB,regC,a->symbolTable[(index==-1)?0:index].value});
+      addRelocation((Relocation){findSection(a->current_section, a->sectionTable),
+       findSymbol(operand_list[(function==OPCODE_JMP)?0:2].symbol, a->symbolTable),
+       R_PC_12, a->LC+3, 0, 1}, a->relocTable);
+      instructionEmit(a->output, (Ins_emit){OC,M,regA,regB,regC,(index==-1)?0:a->symbolTable[index].value});
     }
     a->LC += 4;
     return PASS;
 
   case OPCODE_CALL:
+    if(operand_count != 1)  return INVALID_OPERAND;
+    if(operand_list[0].type == OPERAND_TYPE_NUMBER){
+      if(operand_list[0].dereferance_flag == 0) return INVALID_OPERAND;
+      if(operand_list[0].number > 0x7FF ||
+         operand_list[0].number < -(0x7FF + 1))
+        return NUMBER_OVERFLOW;
+      instructionEmit(a->output, (Ins_emit){0x2,0,0,0,0,operand_list[0].number});
+    } else if(operand_list[0].type == OPERAND_TYPE_SYMBOL){
+      index = findSymbol(operand_list[0].symbol, a->symbolTable);
+      if(index == -1) {
+        Fixup* fix = malloc(sizeof(Fixup));
+        *fix = (Fixup){ftell(a->output)+4, NULL};
+        addSymbol((Symbol){operand_list[0].symbol, 0, 0, NOTYPE, LOCAL, -1, fix}, a->symbolTable);
+      }
+      else if(a->symbolTable[index].section < 0){
+        Fixup *new_fixup = malloc(sizeof(Fixup));       //
+        new_fixup->offset = ftell(a->output) + 4;       //  Insertujemo ulancanu listu na
+        new_fixup->next = a->symbolTable[index].fixup;  //  glavu liste posto nam je nebitan
+        a->symbolTable[index].fixup = new_fixup;        //  poredak
+      }
+      addRelocation((Relocation){findSection(a->current_section, a->sectionTable),
+       findSymbol(operand_list[0].symbol, a->symbolTable),
+       R_PC_12, a->LC+3, 0, 1}, a->relocTable);
+      instructionEmit(a->output, (Ins_emit){0x2,0,0,0,0,(index==-1)?0:a->symbolTable[index].value});
+    }
+    a->LC += 4;
+    return PASS;
+
   case OPCODE_LD:
+    if(operand_count != 2)  return INVALID_OPERAND;
+    if(operand_list[1].type != OPERAND_TYPE_REGISTER)  return INVALID_OPERAND;
+    regA = registerIndex(operand_list[1].reg);
+    OC = 0x9;
+    if(operand_list[0].dereferance_flag == 0)
+      M = 1;
+    else
+      M = 2;
+    if(operand_list[0].type == OPERAND_TYPE_NUMBER){
+    
+      instructionEmit(a->output, (Ins_emit){OC, M, regA, 0, 0, operand_list[0].number});
+    
+    }else if(operand_list[0].type == OPERAND_TYPE_REGISTER){
+    
+      regB = registerIndex(operand_list[0].reg);
+      instructionEmit(a->output, (Ins_emit){OC, M, regA, regB, 0, 0});
+
+    }else if(operand_list[0].type == OPERAND_TYPE_SYMBOL){
+      
+      index = findSymbol(operand_list[0].symbol, a->symbolTable);
+      if(index == -1){
+        Fixup* fix = malloc(sizeof(Fixup));
+        *fix = (Fixup){ftell(a->output)+4, NULL};
+        addSymbol((Symbol){operand_list[0].symbol, 0, 0, NOTYPE, LOCAL, -1, fix}, a->symbolTable);
+      }else if(a->symbolTable[index].section < 0){
+        Fixup *new_fixup = malloc(sizeof(Fixup));       //
+        new_fixup->offset = ftell(a->output) + 4;       //  Insertujemo ulancanu listu na
+        new_fixup->next = a->symbolTable[index].fixup;  //  glavu liste posto nam je nebitan
+        a->symbolTable[index].fixup = new_fixup;        //  poredak
+      }
+      eightbyte = (index == -1)?0:a->symbolTable[index].value;
+      addRelocation((Relocation){findSection(a->current_section, a->sectionTable),
+      findSymbol(operand_list[0].symbol, a->symbolTable),
+        R_ABS_12, a->LC+3, 0, 1}, a->relocTable);
+      instructionEmit(a->output, (Ins_emit){OC, M, regA, regB, 0, eightbyte});
+
+    }else if(operand_list[0].type == OPERAND_TYPE_EXPRESSION){
+    
+      if(operand_list[0].expression->arr_size != 3) return INVALID_OPERAND;
+      regB = registerIndex(operand_list[0].expression->arr[0].reg);
+    
+      if(operand_list[0].expression->arr[1].type == ITEM_NUMBER){
+        eightbyte = operand_list[0].expression->arr[1].number;
+        if(operand_list[0].expression->arr[2].op == OPERATION_TYPE_SUB)
+          eightbyte = -eightbyte;
+        instructionEmit(a->output, (Ins_emit){OC, M, regA, regB, 0, eightbyte});
+    
+      }else if(operand_list[0].expression->arr[1].type == ITEM_SYMBOL){
+        index = findSymbol(operand_list[0].expression->arr[1].symbol, a->symbolTable);
+        if(index == -1){
+          Fixup* fix = malloc(sizeof(Fixup));
+          *fix = (Fixup){ftell(a->output)+4, NULL};
+          addSymbol((Symbol){operand_list[0].expression->arr[1].symbol, 0, 0, NOTYPE, LOCAL, -1, fix}, a->symbolTable);
+        }else if(a->symbolTable[index].section < 0){
+          Fixup *new_fixup = malloc(sizeof(Fixup));       //
+          new_fixup->offset = ftell(a->output) + 4;       //  Insertujemo ulancanu listu na
+          new_fixup->next = a->symbolTable[index].fixup;  //  glavu liste posto nam je nebitan
+          a->symbolTable[index].fixup = new_fixup;        //  poredak
+        }
+        eightbyte = (index == -1)?0:a->symbolTable[index].value;
+        if(operand_list[0].expression->arr[2].op == OPERATION_TYPE_SUB);
+        addRelocation((Relocation){findSection(a->current_section, a->sectionTable),
+        findSymbol(operand_list[0].expression->arr[1].symbol, a->symbolTable),
+         R_ABS_12, a->LC+3, 0,
+         (operand_list[0].expression->arr[2].op == OPERATION_TYPE_SUB)?-1:1}, a->relocTable);
+        instructionEmit(a->output, (Ins_emit){OC, M, regA, regB, 0, eightbyte});
+      }
+    }
+    a->LC += 4;
+    return PASS;
+
   case OPCODE_ST:
-  return PASS;
+    if(operand_count != 2)  return INVALID_OPERAND;
+    if(operand_list[0].type != OPERAND_TYPE_REGISTER)  return INVALID_OPERAND;
+    regA = registerIndex(operand_list[0].reg);
+    OC = 0x8;
+    if(operand_list[1].dereferance_flag == 1)
+      M = 2;
+    
+    if(operand_list[1].type == OPERAND_TYPE_NUMBER){
+    
+      instructionEmit(a->output, (Ins_emit){OC, M, 0, 0, regA, operand_list[1].number});
+    
+    }else if(operand_list[1].type == OPERAND_TYPE_REGISTER){
+    
+      regB = registerIndex(operand_list[1].reg);
+      instructionEmit(a->output, (Ins_emit){OC, M, 0, regB, regA, 0});
+
+    }else if(operand_list[1].type == OPERAND_TYPE_SYMBOL){
+      
+      index = findSymbol(operand_list[1].symbol, a->symbolTable);
+      if(index == -1){
+        Fixup* fix = malloc(sizeof(Fixup));
+        *fix = (Fixup){ftell(a->output)+4, NULL};
+        addSymbol((Symbol){operand_list[1].symbol, 0, 0, NOTYPE, LOCAL, -1, fix}, a->symbolTable);
+      }else if(a->symbolTable[index].section < 0){
+        Fixup *new_fixup = malloc(sizeof(Fixup));       //
+        new_fixup->offset = ftell(a->output) + 4;       //  Insertujemo ulancanu listu na
+        new_fixup->next = a->symbolTable[index].fixup;  //  glavu liste posto nam je nebitan
+        a->symbolTable[index].fixup = new_fixup;        //  poredak
+      }
+      eightbyte = (index == -1)?0:a->symbolTable[index].value;
+      addRelocation((Relocation){findSection(a->current_section, a->sectionTable),
+      findSymbol(operand_list[1].symbol, a->symbolTable),
+        R_ABS_12, a->LC+3, 0, 1}, a->relocTable);
+      instructionEmit(a->output, (Ins_emit){OC, M, 0, regB, regA, eightbyte});
+
+    }else if(operand_list[1].type == OPERAND_TYPE_EXPRESSION){
+    
+      if(operand_list[1].expression->arr_size != 3) return INVALID_OPERAND;
+      regB = registerIndex(operand_list[1].expression->arr[0].reg);
+    
+      if(operand_list[1].expression->arr[1].type == ITEM_NUMBER){
+        eightbyte = operand_list[1].expression->arr[1].number;
+        if(operand_list[1].expression->arr[2].op == OPERATION_TYPE_SUB)
+          eightbyte = -eightbyte;
+        instructionEmit(a->output, (Ins_emit){OC, M, 0, regB, regA, eightbyte});
+    
+      }else if(operand_list[1].expression->arr[1].type == ITEM_SYMBOL){
+        index = findSymbol(operand_list[1].expression->arr[1].symbol, a->symbolTable);
+        if(index == -1){
+          Fixup* fix = malloc(sizeof(Fixup));
+          *fix = (Fixup){ftell(a->output)+4, NULL};
+          addSymbol((Symbol){operand_list[1].expression->arr[1].symbol, 0, 0, NOTYPE, LOCAL, -1, fix}, a->symbolTable);
+        }else if(a->symbolTable[index].section < 0){
+          Fixup *new_fixup = malloc(sizeof(Fixup));       //
+          new_fixup->offset = ftell(a->output) + 4;       //  Insertujemo ulancanu listu na
+          new_fixup->next = a->symbolTable[index].fixup;  //  glavu liste posto nam je nebitan
+          a->symbolTable[index].fixup = new_fixup;        //  poredak
+        }
+        eightbyte = (index == -1)?0:a->symbolTable[index].value;
+        if(operand_list[1].expression->arr[2].op == OPERATION_TYPE_SUB);
+        addRelocation((Relocation){findSection(a->current_section, a->sectionTable),
+        findSymbol(operand_list[1].expression->arr[1].symbol, a->symbolTable),
+         R_ABS_12, a->LC+3, 0,
+         (operand_list[1].expression->arr[2].op == OPERATION_TYPE_SUB)?-1:1}, a->relocTable);
+        instructionEmit(a->output, (Ins_emit){OC, M, 0, regB, regA, eightbyte});
+      }
+    }
+    a->LC += 4;
+    return PASS;
 
   case OPCODE_SUB:
     M = 0x01;
@@ -198,9 +371,36 @@ AsmERROR execute_function(Functions function, Operand* operand_list, int operand
 
   case DIRECTIVE_EQU:
   case DIRECTIVE_ASCII:
+    if(operand_count != 1)   return INVALID_OPERAND;
+    if(operand_list[0].type != OPERAND_TYPE_STRING) return INVALID_OPERAND;
+    return PASS;
+
   case DIRECTIVE_WORD:
+    if(a->current_section == NULL) return SYMBOL_NOT_IN_SECTION;
+    for(int i = 0; i < operand_count; i++){
+      if(operand_list[i].type == OPERAND_TYPE_NUMBER){
+        emit4(a->output, operand_list[i].number);
+      }else if(operand_list[i].type == OPERAND_TYPE_SYMBOL){
+        index = findSymbol(operand_list[i].symbol, a->symbolTable);
+        if(index == -1){
+          addSymbol((Symbol){operand_list[i].symbol, 0, 0, NOTYPE, LOCAL, -1, NULL}, a->symbolTable);
+        }
+        emit4(a->output, (index==-1)?0:a->symbolTable[index].value);
+        addRelocation((Relocation){findSection(a->current_section, a->sectionTable),
+         operand_list[i].symbol , R_ABS_32, a->LC, 0, 1}, a->relocTable);
+      }else return INVALID_OPERAND;
+      a->LC+=4;
+    }
+    return PASS;
+
   case DIRECTIVE_SKIP:
-  return PASS;
+    if(a->current_section == NULL) return SYMBOL_NOT_IN_SECTION;
+    if(operand_count != 1)  return INVALID_OPERAND;
+    if(operand_list[0].type != OPERAND_TYPE_NUMBER) return INVALID_OPERAND;
+    for(int i = 0; i < operand_list[0].number; i++)
+      emit1(a->output, 0);
+    a->LC += operand_list[0].number;
+    return PASS;
 
   case DIRECTIVE_SECTION:
     if(operand_count != 1) return INVALID_OPERAND;
@@ -220,7 +420,8 @@ AsmERROR execute_function(Functions function, Operand* operand_list, int operand
   case DIRECTIVE_GLOBAL:
     for(int i = 0; i < operand_count; i++){
       if(operand_list[i].type != OPERAND_TYPE_SYMBOL) return INVALID_OPERAND;
-      Symbol sym = {operand_list[i].symbol, 0, 0, NOTYPE, GLOBAL, findSection(a->current_section, a->sectionTable)};
+      Symbol sym = {operand_list[i].symbol, 0, 0, NOTYPE, GLOBAL, -1};
+      //findSection(a->current_section, a->sectionTable)
       index = findSymbol(sym.name, a->symbolTable);
       if(index == -1) addSymbol(sym, a->symbolTable);
       else  a->symbolTable[index].binding = GLOBAL;

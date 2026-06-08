@@ -7,7 +7,6 @@ extern FILE* yyin;
 
 extern Instruction *instructions;
 extern int instruction_count;
-
 int main(int argc, const char** argv){
   Files* files = parse(argc, argv);
   

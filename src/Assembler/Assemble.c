@@ -4,13 +4,16 @@ void Assemble(Instruction* instructions, int instruction_count, FILE* output){
 
   Symbol symbolTable[SYMBOL_TABLE_LENGHT] = {0};
   Section sectionTable[SECTION_TABLE_LENGHT] = {0};
+  Relocation relocTable[RELOC_TABLE_LENGHT] = {0};
+
+  Assembler_state a = {output, 1, NULL, 0, symbolTable, sectionTable, relocTable};
+  
   char* abs = "*ABS*";
-  Assembler_state a = {output, 1, NULL, 0, symbolTable, sectionTable};
   int index = 0;
   AsmERROR error = PASS;
   
   emit8(a.output, 0x535F454C463634);    // S_ELF signature
-  emit8(a.output, 0x0000000000000000);  // last byte = SectionHeaderTable ptr
+  emit8(a.output, 0x0000000000000000);  // last fourbyte = SectionHeaderTable ptr
   
   while(a.assembler_flag){
     Instruction* ins = &instructions[index];
@@ -32,6 +35,7 @@ void Assemble(Instruction* instructions, int instruction_count, FILE* output){
   }
   printSectionTable(&a);
   printSymsTable(&a);
+  printRelocTable(&a);
   return;
 };
 
@@ -142,8 +146,38 @@ void printSymsTable(Assembler_state* a){
         break;
       }
       printf("Name: %s| Value: %d | Size: %d | Type: %s | Binding: %s | Section: %s\n",
-      a->symbolTable[i].name, a->symbolTable[i].value, a->symbolTable[i].size, type, (a->symbolTable[i].binding == 0)?"LOCAL":"GLOBAL", (a->symbolTable[i].section<0)?"UND":a->sectionTable[a->symbolTable[i].section].name);
+      a->symbolTable[i].name, a->symbolTable[i].value, a->symbolTable[i].size, type, (a->symbolTable[i].binding == 0)?"LOCAL":"GLOBAL", (a->symbolTable[i].section<0)?((a->symbolTable[i].section==-1)?"UND":"EXTERN"):a->sectionTable[a->symbolTable[i].section].name);
     }else
       return;
+  }
+};
+
+
+void printRelocTable(Assembler_state* a){
+  char* type;
+  for(int i = 0; i < RELOC_TABLE_LENGHT; i++){
+    switch (a->relocTable[i].type)
+    {
+    case UNINITIALISED:
+      return;
+    case R_ABS_12:
+      type = "R_ABS_12";
+      break;
+    case R_PC_12:
+      type = "R_PC_12";
+      break;
+    case R_ABS_32:
+      type = "R_ABS_32";
+      break;
+    case R_PC_32:
+      type = "R_PC_32";
+      break;
+    default:
+      return;
+    }
+    printf("Section: %s | Symbol: %s | Type: %s | Offset: %d | Addend: %d | Multiplier %d\n", 
+     a->sectionTable[a->relocTable[i].section].name,
+     a->symbolTable[a->relocTable[i].symbol].name, type,
+     a->relocTable[i].offset, a->relocTable[i].addend, a->relocTable[i].multiplier);
   }
 };

@@ -22,7 +22,6 @@ int findSection(char* section, Section* sectionTable){
 };
 
 AsmERROR addSymbol(Symbol symbol, Symbol* symbolTable){
-  
   for(int i = 0; i < SYMBOL_TABLE_LENGHT; i++){
     if(symbolTable[i].name){
       if(strcmp(symbol.name, symbolTable[i].name) == 0) return DOUBLE_SYMBOL;
@@ -32,6 +31,7 @@ AsmERROR addSymbol(Symbol symbol, Symbol* symbolTable){
       return PASS;
     }
   }
+  return TABLE_FULL;
 };
 
 int findSymbol(char* symbol, Symbol* symbolTable){
@@ -62,4 +62,15 @@ int registerIndex(char* reg){
   default:
     return -1;
   }
+};
+
+
+AsmERROR addRelocation(Relocation relocation, Relocation* relocationTable){
+  for(int i = 0; i < RELOC_TABLE_LENGHT; i++){
+    if(!relocationTable[i].type){
+      relocationTable[i] = relocation;
+      return PASS;
+    }
+  }
+  return TABLE_FULL;
 };
