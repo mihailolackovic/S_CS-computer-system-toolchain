@@ -14,17 +14,27 @@ typedef enum{
   DOUBLE_SECTION,
   EXTERN_SYMBOL_REDEFINITION,
   SYMBOL_NOT_IN_SECTION,
-  NUMBER_OVERFLOW
+  NUMBER_OVERFLOW,
+  INVALID_EXPRESSION,
+  EXPRESSION_NOT_RELOCATABLE,
+  CYCLICAL_DEPENDENCY,
+  LITERAL_INSERTION
 } AsmERROR;
 
 #define SYMBOL_TABLE_LENGHT 128
 #define SECTION_TABLE_LENGHT 32
 #define RELOC_TABLE_LENGHT 128
 
-typedef struct Fixup{
-  int offset;
-  struct Fixup* next;
-} Fixup;
+typedef struct{
+  union{
+    Expression* expression;
+    char* symbol;
+  };
+  int count;
+  int* dependency;
+  OperandType type;
+} ForwardDeclaration;
+
 
 ////////////////////////////////////////////////////////////
 //  RELOC  /////////////////////////////////////////////////
@@ -41,9 +51,9 @@ typedef enum{
 typedef struct{
   int section;
   int symbol;
-  RelocType type;
   int offset;
   int addend;
+  RelocType type;
   int multiplier;
 } Relocation;
 
@@ -86,7 +96,7 @@ typedef struct{
   SymbolType type;
   SymbolBinding binding;
   int section;
-  Fixup* fixup;
+  ForwardDeclaration* fd;
 } Symbol;
 
 AsmERROR addSymbol(Symbol symbol, Symbol* symbolTable);
@@ -98,6 +108,7 @@ typedef struct{
   FILE* output;
   int assembler_flag;
   int LC;
+  int headerOffset;
   char* current_section;
   Symbol* symbolTable;
   Section* sectionTable;
@@ -155,11 +166,18 @@ typedef struct{
 ////////////////////////////////////////////////////////////
 
 int registerIndex(char* reg);
+int evalExpression(Expression* exp, Assembler_state* a);
 
-typedef struct ForwardDeclaration{
-  struct ForwardDeclaration* next;
-  Expression* expression;
-  char* symbol;
-} ForwardDeclaration;
+typedef enum{
+  UND_S = -1,
+  EXTERN_S = -2,
+  ABS_S = SECTION_TABLE_LENGHT
+} SpecialSections;
+
+typedef struct{
+  int section_counts[2*SECTION_TABLE_LENGHT];
+} RelocStackItem;
+
+int evalRelocability(Expression* exp, Assembler_state* a);
 
 #endif

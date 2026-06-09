@@ -27,7 +27,7 @@ string_parts {whitespaces}*{word}{whitespaces}*
 string {string_parts}+
 
 %%
-\"{string}\" { yylval.str = strdup(yytext); return STRING; }
+\"{string}\" { yylval.str = strdup(strndup(yytext+1, strlen(yytext)-2)); return STRING; }
 
 "#"[^\n]* ;
 {whitespaces}+  ;

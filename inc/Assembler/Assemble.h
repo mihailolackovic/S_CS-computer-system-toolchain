@@ -6,10 +6,13 @@
 
 void Assemble(Instruction* instructions, int instruction_count, FILE* output);
 
-void initSymbolsTable(Symbol* symbolTable);
-void initSectionTable(Section* sectionTable);
+AsmERROR resolveFD(Assembler_state* a);
 
-AsmERROR handleEXIT(AsmERROR error);
+void emitSymsTable(Assembler_state* a);
+void emitRelocTable(Assembler_state* a);
+AsmERROR emitSectionHeader(Assembler_state* a);
+
+AsmERROR handleEXIT(AsmERROR error, Instruction* ins);
 
 void printInstruction(Instruction ins);
 void printSectionTable(Assembler_state* a);

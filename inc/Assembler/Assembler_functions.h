@@ -3,6 +3,7 @@
 
 #include "../../inc/Assembler/emit.h"
 #include "Assembler_structs.h"
+#include <stdlib.h>
 
 Functions lookup_function(char* function);
 

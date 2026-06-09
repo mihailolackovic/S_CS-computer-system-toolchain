@@ -1,18 +1,17 @@
 #include "../../inc/Assembler/Assemble.h"
-int debug = 0;
+int debug = 1;
 void Assemble(Instruction* instructions, int instruction_count, FILE* output){
 
   Symbol symbolTable[SYMBOL_TABLE_LENGHT] = {0};
   Section sectionTable[SECTION_TABLE_LENGHT] = {0};
   Relocation relocTable[RELOC_TABLE_LENGHT] = {0};
 
-  Assembler_state a = {output, 1, NULL, 0, symbolTable, sectionTable, relocTable};
-  
-  char* abs = "*ABS*";
+  Assembler_state a = {output, 1, 0, 0, NULL, symbolTable, sectionTable, relocTable, NULL};
+
   int index = 0;
   AsmERROR error = PASS;
   
-  emit8(a.output, 0x535F454C463634);    // S_ELF signature
+  emit8(a.output, 0x00535F454C463634);    // S_ELF signature
   emit8(a.output, 0x0000000000000000);  // last fourbyte = SectionHeaderTable ptr
   
   while(a.assembler_flag){
@@ -22,37 +21,203 @@ void Assemble(Instruction* instructions, int instruction_count, FILE* output){
     
     if(ins->label)
       if((error = labelSymbol(ins->label, &a)) != PASS)
-        handleEXIT(error);
+        handleEXIT(error, ins);
 
     if((error = execute_function(func, ins->operand_list, ins->operand_count, &a)) != PASS)
-      handleEXIT(error);
-
-    if(debug == 1)
-      printInstruction(*ins);
+      handleEXIT(error, ins);
     
     if(index == instruction_count-1)  a.assembler_flag = 0;
     else                              index++;
   }
-  printSectionTable(&a);
-  printSymsTable(&a);
-  printRelocTable(&a);
+
+  resolveFD(&a);
+
+  emitSymsTable(&a);
+  emitRelocTable(&a);
+  emitSectionHeader(&a);
+
+  fseek(a.output, 0xC, SEEK_SET);
+  fwrite(&a.headerOffset, 4, 1, a.output);
+
+  if(debug == 1){
+    printSectionTable(&a);
+    printSymsTable(&a);
+    printRelocTable(&a);
+  }
   return;
 };
 
-AsmERROR handleEXIT(AsmERROR error){
+void emitSymsTable(Assembler_state* a){
+  int Sym_Pool_size = 0;
+  int Sym_Table_size = 0;
+  int sym_name_offset[SYMBOL_TABLE_LENGHT];
+  for(int i = 0; i < SYMBOL_TABLE_LENGHT; i++){
+    if(a->symbolTable[i].name){
+      sym_name_offset[i] = Sym_Pool_size;
+      Sym_Pool_size += strlen(a->symbolTable[i].name)+1;
+      for(int j = 0; j < strlen(a->symbolTable[i].name); j++)
+        emit1(a->output, a->symbolTable[i].name[j]);
+      emit1(a->output, 0);
+    } else break;
+  }
+  for(int i = 0; i < SYMBOL_TABLE_LENGHT; i++){
+    if(a->symbolTable[i].name){
+      Sym_Table_size += 16;
+      emit4(a->output, sym_name_offset[i]);
+      emit4(a->output, a->symbolTable[i].value);
+      emit4(a->output, a->symbolTable[i].size);
+      emit1(a->output, a->symbolTable[i].type);
+      emit1(a->output, a->symbolTable[i].binding);
+      emit2(a->output, a->symbolTable[i].section);
+    } else break;
+  }
+  if(a->sectionTable[SECTION_TABLE_LENGHT-5].name != NULL)
+    return;
+  addSection((Section){"Sym_pool", 0, Sym_Pool_size}, a->sectionTable);
+  addSection((Section){"Sym_table", 0, Sym_Table_size}, a->sectionTable);
+};
+
+void emitRelocTable(Assembler_state* a){
+  int reloc_table_size = 0;
+  for(int i = 0; i < RELOC_TABLE_LENGHT; i++){
+    if(a->relocTable[i].type != UNINITIALISED){
+      emit4(a->output, a->relocTable[i].section);
+      emit4(a->output, a->relocTable[i].symbol);
+      emit4(a->output, a->relocTable[i].offset);
+      emit4(a->output, a->relocTable[i].addend);
+      emit1(a->output, a->relocTable[i].type);
+      emit3(a->output, 0);
+      reloc_table_size += 20;
+    }else break;
+  }
+  addSection((Section){"Rel_Table", 0, reloc_table_size}, a->sectionTable);
+};
+
+AsmERROR emitSectionHeader(Assembler_state* a){
+  int sec_Pool_size = 0;
+  int sec_name_offset[SECTION_TABLE_LENGHT];
+  int header_size = 0x10;
+  int cursor = header_size;
+  for(int i = 0; i < SECTION_TABLE_LENGHT; i++){
+    if(a->sectionTable[i].name != NULL){
+      sec_name_offset[i] = sec_Pool_size;
+      sec_Pool_size += strlen(a->sectionTable[i].name)+1;
+      for(int j = 0; j < strlen(a->sectionTable[i].name); j++)
+        emit1(a->output, a->sectionTable[i].name[j]);
+      emit1(a->output, 0);
+    } else break;
+  }
+  addSection((Section){"Sect_Pool", 0, sec_Pool_size}, a->sectionTable);
+  a->headerOffset = ftell(a->output);
+  for(int i = 0; i < SECTION_TABLE_LENGHT; i++){
+    if(a->sectionTable[i].name != NULL){
+      a->sectionTable[i].base = cursor;
+      cursor += a->sectionTable[i].lenght;
+      emit4(a->output ,sec_name_offset[i]);
+      emit4(a->output ,a->sectionTable[i].lenght);
+      emit4(a->output ,a->sectionTable[i].base);
+    } else break;
+  }
+  return PASS;
+};
+
+AsmERROR resolveFD(Assembler_state* a){
+  // Ovde bi bilo pametno da se napravi grafik zavisnosti 
+  // pa da se pretrazuje za cikluse i DFS al zajebi to :( da u C-u radim, neki drugi put
+  int usl[SYMBOL_TABLE_LENGHT] = {0};
+  int usld[SYMBOL_TABLE_LENGHT][SYMBOL_TABLE_LENGHT] = {0};
+  int usls = 0;
+  int uslds[SYMBOL_TABLE_LENGHT] = {0};
+
+  char fail = 0;
+
+  for(int i = 0; i < SYMBOL_TABLE_LENGHT; i++){
+    if(a->symbolTable[i].fd == NULL)  continue;
+
+    ForwardDeclaration* fd = a->symbolTable[i].fd;
+    for(int j = 0; j < fd->count; j++){
+      if(a->symbolTable[fd->dependency[j]].section == -1){
+        fail = 1;
+        break;
+      }
+    }
+    if(fail == 1){
+      usl[usls] = findSymbol(a->symbolTable[i].name, a->symbolTable);
+      for(int j = 0; j < fd->count; j++){
+        usld[usls][uslds[usls]++] = fd->dependency[j]; 
+      }
+      usls++;
+      fail = 0;
+      continue;
+    }
+
+    int relocability = evalRelocability(fd->expression, a);
+
+    if(relocability == -1) return EXPRESSION_NOT_RELOCATABLE;
+
+    if(relocability == ABS_S){
+      a->symbolTable[i].value = evalExpression(fd->expression, a);
+      a->symbolTable[i].section = ABS_S;
+    } else {
+      addRelocation((Relocation){}, a->relocTable);
+      a->symbolTable[i].section = relocability;
+    }
+  }
+
+  char progress_flag = 1;
+  
+  while (progress_flag) {
+    progress_flag = 0;
+
+    for (int i = 0; i < usls; i++) {
+      int index = usl[i];
+
+      if (a->symbolTable[index].section != -1) {
+        continue;
+      }
+
+      char completed_flag = 1;
+
+      for (int j = 0; j < uslds[i]; j++) {
+        int zavisni_simbol_idx = usld[i][j];
+        
+        if (a->symbolTable[zavisni_simbol_idx].section == -1) {
+          completed_flag = 0;
+          break;
+        }
+      }
+
+      if (completed_flag) {
+        ForwardDeclaration* fd = a->symbolTable[index].fd;
+
+        int relocability = evalRelocability(fd->expression, a);
+        if (relocability == -1) return EXPRESSION_NOT_RELOCATABLE;
+
+        a->symbolTable[index].value = evalExpression(fd->expression, a);
+        a->symbolTable[index].section = relocability;
+
+        progress_flag = 1; 
+      }
+    }
+  }
+  for (int i = 0; i < usls; i++) {
+    int check = usl[i];
+    if (a->symbolTable[check].section == -1) {
+      return CYCLICAL_DEPENDENCY;
+    }
+  }
+
+  return PASS;
+}
+
+AsmERROR handleEXIT(AsmERROR error, Instruction* ins){
   printf("_______ERROR_________ TYPE: %d ___________\n", error);
-  debug = 1;
+  printInstruction(*ins);
+  if(debug == 1)
+    return;
+  else
+    exit(error);
 };
-
-void initSymbolsTable(Symbol* symbolTable){
-  for(int i = 0; i < SYMBOL_TABLE_LENGHT; i++)
-    symbolTable[i] = (Symbol){NULL, 0, 0, 0, 0, 0};
-};
-void initSectionTable(Section* sectionTable){
-  for(int i = 0; i < SYMBOL_TABLE_LENGHT; i++)
-    sectionTable[i] = (Section){NULL, 0, 0};
-};
-
 
 void printInstruction(Instruction ins){
   printf("%s  ", (ins.label)?ins.label:"NO_LABEL");
@@ -119,7 +284,7 @@ void printInstruction(Instruction ins){
 void printSectionTable(Assembler_state* a){
   for(int i = 0; i < SECTION_TABLE_LENGHT; i++){
     if(a->sectionTable[i].name)
-        printf("Name: %s | Size: %d | Offset: %d\n", a->sectionTable[i].name, a->sectionTable[i].lenght, a->sectionTable[i].base);
+        printf("Name: %s | Size: %d | Base: %d\n", a->sectionTable[i].name, a->sectionTable[i].lenght, a->sectionTable[i].base);
     else return;
   }
 }
@@ -128,6 +293,23 @@ void printSymsTable(Assembler_state* a){
   for(int i = 0; i < SYMBOL_TABLE_LENGHT; i++){
     if(a->symbolTable[i].name){
       char* type;
+      char* section;
+      switch (a->symbolTable[i].section)
+      {
+      case -2:
+        section = "EXTERN";
+        break;
+      case -1:
+        section = "UND";
+        break;
+      case SECTION_TABLE_LENGHT:
+        section = "*ABS*";
+        break;
+      
+      default:
+        section = a->sectionTable[a->symbolTable[i].section].name;
+        break;
+      }
       switch (a->symbolTable[i].type){
       case NOTYPE:
         type = "NOTYPE";
@@ -145,8 +327,9 @@ void printSymsTable(Assembler_state* a){
         type = "SRC";
         break;
       }
-      printf("Name: %s| Value: %d | Size: %d | Type: %s | Binding: %s | Section: %s\n",
-      a->symbolTable[i].name, a->symbolTable[i].value, a->symbolTable[i].size, type, (a->symbolTable[i].binding == 0)?"LOCAL":"GLOBAL", (a->symbolTable[i].section<0)?((a->symbolTable[i].section==-1)?"UND":"EXTERN"):a->sectionTable[a->symbolTable[i].section].name);
+      printf("Name: %s | Value: %d | Size: %d | Type: %s | Binding: %s | Section: %s\n",
+      a->symbolTable[i].name, a->symbolTable[i].value, a->symbolTable[i].size, type,
+       (a->symbolTable[i].binding == 0)?"LOCAL":"GLOBAL", section);
     }else
       return;
   }

@@ -38,5 +38,6 @@ skip:
     ret
 message_start:
 .ascii "press"
+message_end:
 
 .end
