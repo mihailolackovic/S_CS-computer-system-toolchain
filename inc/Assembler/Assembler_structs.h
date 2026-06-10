@@ -45,7 +45,8 @@ typedef enum{
   R_ABS_12,
   R_PC_12,
   R_ABS_32,
-  R_PC_32
+  R_PC_32,
+  RESOLVED
 } RelocType;
 
 typedef struct{

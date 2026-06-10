@@ -23,7 +23,7 @@ whitespaces [ \r\t]
 word {letter_all}({alfanumeric}|_)*
 number {digit}+
 hex_number 0[Xx]{alfanumeric}+
-string_parts {whitespaces}*{word}{whitespaces}*
+string_parts {whitespaces}*({word}|{alfanumeric}+){whitespaces}*
 string {string_parts}+
 
 %%

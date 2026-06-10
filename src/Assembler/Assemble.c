@@ -32,6 +32,8 @@ void Assemble(Instruction* instructions, int instruction_count, FILE* output){
 
   resolveFD(&a);
 
+  resolvePCRel(&a);
+
   emitSymsTable(&a);
   emitRelocTable(&a);
   emitSectionHeader(&a);
@@ -121,6 +123,82 @@ AsmERROR emitSectionHeader(Assembler_state* a){
   return PASS;
 };
 
+AsmERROR resolvePCRel(Assembler_state* a){
+  for(int i = 0; i < RELOC_TABLE_LENGHT; i++){
+    if(a->relocTable[i].type == UNINITIALISED) break;
+    
+    if(a->relocTable[i].type == R_ABS_12){
+
+      if(a->symbolTable[a->relocTable[i].symbol].section == ABS_S){
+
+        int number = a->symbolTable[a->relocTable[i].symbol].value;
+        
+        if(number > 0x7FF || number < -(0x7FF + 1))
+          return NUMBER_OVERFLOW;
+
+        int offset = 0x10;
+        for(int j = 0; j < SECTION_TABLE_LENGHT; j++){
+          if(a->sectionTable[j].name != NULL){
+            if(a->relocTable[i].section == j){
+              offset +=  a->relocTable[i].offset;
+              break;
+            } else{
+              offset +=  a->sectionTable[j].lenght;
+            }
+          }
+        }
+        long stara_pozicija = ftell(a->output);
+        uint32_t ins;
+        fseek(a->output, offset, SEEK_SET);
+        fread(&ins, 4, 1, a->output);
+
+        ins &= 0xFFFFF000;
+        ins |= (number & 0x0FFF);
+
+        fseek(a->output, offset, SEEK_SET);
+        fwrite(&ins, 4, 1, a->output);
+
+        fseek(a->output, stara_pozicija, SEEK_SET);
+        a->relocTable[i].type = RESOLVED;
+      }
+
+    } else if(a->relocTable[i].type == R_PC_12){
+      if(a->symbolTable[a->relocTable[i].symbol].section == a->relocTable[i].section){
+        int number = a->symbolTable[a->relocTable[i].symbol].value - a->relocTable[i].offset;
+        
+        if(number > 0x7FF || number < -(0x7FF + 1))
+          return NUMBER_OVERFLOW;
+
+        int offset = 0x10;
+        for(int j = 0; j < SECTION_TABLE_LENGHT; j++){
+          if(a->sectionTable[j].name != NULL){
+            if(a->relocTable[i].section == j){
+              offset +=  a->relocTable[i].offset;
+              break;
+            } else{
+              offset +=  a->sectionTable[j].lenght;
+            }
+          }
+        }
+        long stara_pozicija = ftell(a->output);
+        uint32_t ins;
+        fseek(a->output, offset, SEEK_SET);
+        fread(&ins, 4, 1, a->output);
+
+        ins &= 0xFFFFF000;
+        ins |= (number & 0x0FFF);
+
+        fseek(a->output, offset, SEEK_SET);
+        fwrite(&ins, 4, 1, a->output);
+
+        fseek(a->output, stara_pozicija, SEEK_SET);
+        a->relocTable[i].type = RESOLVED;
+      }
+    }
+  }
+};
+
+
 AsmERROR resolveFD(Assembler_state* a){
   // Ovde bi bilo pametno da se napravi grafik zavisnosti 
   // pa da se pretrazuje za cikluse i DFS al zajebi to :( da u C-u radim, neki drugi put
@@ -144,7 +222,7 @@ AsmERROR resolveFD(Assembler_state* a){
     if(fail == 1){
       usl[usls] = findSymbol(a->symbolTable[i].name, a->symbolTable);
       for(int j = 0; j < fd->count; j++){
-        usld[usls][uslds[usls]++] = fd->dependency[j]; 
+        usld[usls][uslds[usls]++] = fd->dependency[j];  // :(
       }
       usls++;
       fail = 0;
@@ -354,6 +432,9 @@ void printRelocTable(Assembler_state* a){
       break;
     case R_PC_32:
       type = "R_PC_32";
+      break;
+    case RESOLVED:
+      type = "RESOLVED";
       break;
     default:
       return;

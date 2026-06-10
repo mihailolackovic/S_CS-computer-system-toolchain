@@ -28,7 +28,7 @@ int main(int argc, const char** argv){
 
   yyparse();
 
-  FILE* output = fopen(files->output, "wb");
+  FILE* output = fopen(files->output, "rb+");
   if (!output) {
     perror("fopen");
     return;

@@ -7,6 +7,7 @@
 void Assemble(Instruction* instructions, int instruction_count, FILE* output);
 
 AsmERROR resolveFD(Assembler_state* a);
+AsmERROR resolvePCRel(Assembler_state* a);
 
 void emitSymsTable(Assembler_state* a);
 void emitRelocTable(Assembler_state* a);

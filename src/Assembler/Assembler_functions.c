@@ -136,13 +136,13 @@ AsmERROR execute_function(Functions function, Operand* operand_list, int operand
     if(operand_count != 3)  return INVALID_OPERAND;
     if(operand_list[2].dereferance_flag == 0) return INVALID_OPERAND;
     OC = 0x3;
-    regA = 0;
+    regA = 15;
     regB = registerIndex(operand_list[0].reg);
     regC = registerIndex(operand_list[1].reg);
   case OPCODE_JMP:
     if(function == OPCODE_JMP) {
       OC = 0x3;
-      regA = 0;
+      regA = 15;
       regB = 0;
       regC = 0;
       if(operand_count != 1)  return INVALID_OPERAND;
@@ -161,7 +161,7 @@ AsmERROR execute_function(Functions function, Operand* operand_list, int operand
       }
       addRelocation((Relocation){findSection(a->current_section, a->sectionTable),
        findSymbol(operand_list[(function==OPCODE_JMP)?0:2].symbol, a->symbolTable),
-       a->LC+3, 0, R_PC_12, 1}, a->relocTable);
+       a->LC, 0, R_PC_12, 1}, a->relocTable);
       instructionEmit(a->output, (Ins_emit){OC,M,regA,regB,regC,(index==-1)?0:a->symbolTable[index].value});
     }
     a->LC += 4;
@@ -174,7 +174,7 @@ AsmERROR execute_function(Functions function, Operand* operand_list, int operand
       if(operand_list[0].number > 0x7FF ||
          operand_list[0].number < -(0x7FF + 1))
         return NUMBER_OVERFLOW;
-      instructionEmit(a->output, (Ins_emit){0x2,0,0,0,0,operand_list[0].number});
+      instructionEmit(a->output, (Ins_emit){0x2,15,0,0,0,operand_list[0].number});
     } else if(operand_list[0].type == OPERAND_TYPE_SYMBOL){
       index = findSymbol(operand_list[0].symbol, a->symbolTable);
       if(index == -1) {
@@ -182,123 +182,102 @@ AsmERROR execute_function(Functions function, Operand* operand_list, int operand
       }
       addRelocation((Relocation){findSection(a->current_section, a->sectionTable),
        findSymbol(operand_list[0].symbol, a->symbolTable),
-       a->LC+3, 0, R_PC_12, 1}, a->relocTable);
-      instructionEmit(a->output, (Ins_emit){0x2,0,0,0,0,(index==-1)?0:a->symbolTable[index].value});
-    }
-    a->LC += 4;
-    return PASS;
-
-  case OPCODE_LD:
-    if(operand_count != 2)  return INVALID_OPERAND;
-    if(operand_list[1].type != OPERAND_TYPE_REGISTER)  return INVALID_OPERAND;
-    regA = registerIndex(operand_list[1].reg);
-    OC = 0x9;
-    if(operand_list[0].dereferance_flag == 0)
-      M = 1;
-    else
-      M = 2;
-    if(operand_list[0].type == OPERAND_TYPE_NUMBER){
-    
-      instructionEmit(a->output, (Ins_emit){OC, M, regA, 0, 0, operand_list[0].number});
-    
-    }else if(operand_list[0].type == OPERAND_TYPE_REGISTER){
-    
-      regB = registerIndex(operand_list[0].reg);
-      instructionEmit(a->output, (Ins_emit){OC, M, regA, regB, 0, 0});
-
-    }else if(operand_list[0].type == OPERAND_TYPE_SYMBOL){
-      
-      index = findSymbol(operand_list[0].symbol, a->symbolTable);
-      if(index == -1){
-        addSymbol((Symbol){operand_list[0].symbol, 0, 0, NOTYPE, LOCAL, -1, NULL}, a->symbolTable);
-      }
-      eightbyte = (index == -1)?0:a->symbolTable[index].value;
-      addRelocation((Relocation){
-       findSection(a->current_section, a->sectionTable),
-       findSymbol(operand_list[0].symbol, a->symbolTable),
-       a->LC+3, 0, R_ABS_12, 1}, a->relocTable);
-      instructionEmit(a->output, (Ins_emit){OC, M, regA, regB, 0, eightbyte});
-
-    }else if(operand_list[0].type == OPERAND_TYPE_EXPRESSION){
-    
-      if(operand_list[0].expression->arr_size != 3) return INVALID_OPERAND;
-      regB = registerIndex(operand_list[0].expression->arr[0].reg);
-    
-      if(operand_list[0].expression->arr[1].type == ITEM_NUMBER){
-        eightbyte = operand_list[0].expression->arr[1].number;
-        if(operand_list[0].expression->arr[2].op == OPERATION_TYPE_SUB)
-          eightbyte = -eightbyte;
-        instructionEmit(a->output, (Ins_emit){OC, M, regA, regB, 0, eightbyte});
-    
-      }else if(operand_list[0].expression->arr[1].type == ITEM_SYMBOL){
-        index = findSymbol(operand_list[0].expression->arr[1].symbol, a->symbolTable);
-        if(index == -1){
-          addSymbol((Symbol){operand_list[0].expression->arr[1].symbol, 0, 0, NOTYPE, LOCAL, -1, NULL}, a->symbolTable);
-        }
-        eightbyte = (index == -1)?0:a->symbolTable[index].value;
-        if(operand_list[0].expression->arr[2].op == OPERATION_TYPE_SUB);
-        addRelocation((Relocation){findSection(a->current_section, a->sectionTable),
-        findSymbol(operand_list[0].expression->arr[1].symbol, a->symbolTable),
-          a->LC+3, 0, R_ABS_12,
-         (operand_list[0].expression->arr[2].op == OPERATION_TYPE_SUB)?-1:1}, a->relocTable);
-        instructionEmit(a->output, (Ins_emit){OC, M, regA, regB, 0, eightbyte});
-      }
+       a->LC, 0, R_PC_12, 1}, a->relocTable);
+      instructionEmit(a->output, (Ins_emit){0x2,15,0,0,0,(index==-1)?0:a->symbolTable[index].value});
     }
     a->LC += 4;
     return PASS;
 
   case OPCODE_ST:
+  case OPCODE_LD:
     if(operand_count != 2)  return INVALID_OPERAND;
-    if(operand_list[0].type != OPERAND_TYPE_REGISTER)  return INVALID_OPERAND;
-    regA = registerIndex(operand_list[0].reg);
-    OC = 0x8;
-    if(operand_list[1].dereferance_flag == 1)
+    if(operand_list[(function == OPCODE_LD)?1:0].type != OPERAND_TYPE_REGISTER)  return INVALID_OPERAND;
+
+    char** reg = (function == OPCODE_LD)?&operand_list[1].reg:&operand_list[0].reg;
+    Operand* operand = (function == OPCODE_LD)?&operand_list[0]:&operand_list[1];
+
+    
+    regA = registerIndex(*reg);
+    OC = (function == OPCODE_LD)?0x9:0x8;
+
+    if(operand->dereferance_flag == 0)
+      M = (function == OPCODE_LD)?1:0;
+    else
       M = 2;
-    
-    if(operand_list[1].type == OPERAND_TYPE_NUMBER){
-    
-      instructionEmit(a->output, (Ins_emit){OC, M, 0, 0, regA, operand_list[1].number});
-    
-    }else if(operand_list[1].type == OPERAND_TYPE_REGISTER){
-    
-      regB = registerIndex(operand_list[1].reg);
-      instructionEmit(a->output, (Ins_emit){OC, M, 0, regB, regA, 0});
-
-    }else if(operand_list[1].type == OPERAND_TYPE_SYMBOL){
+    if(operand->type == OPERAND_TYPE_NUMBER){
       
-      index = findSymbol(operand_list[1].symbol, a->symbolTable);
-      if(index == -1){
-        addSymbol((Symbol){operand_list[1].symbol, 0, 0, NOTYPE, LOCAL, -1, NULL}, a->symbolTable);
-      }
-      eightbyte = (index == -1)?0:a->symbolTable[index].value;
-      addRelocation((Relocation){findSection(a->current_section, a->sectionTable),
-      findSymbol(operand_list[1].symbol, a->symbolTable),
-        a->LC+3, 0, R_ABS_12, 1}, a->relocTable);
-      instructionEmit(a->output, (Ins_emit){OC, M, 0, regB, regA, eightbyte});
+      if(function == OPCODE_LD)
+        instructionEmit(a->output, (Ins_emit){OC, M, regA, 0, 0, operand->number});
+      else
+        instructionEmit(a->output, (Ins_emit){OC, M, 0, 0, regA, operand->number});
 
-    }else if(operand_list[1].type == OPERAND_TYPE_EXPRESSION){
+    }else if(operand->type == OPERAND_TYPE_REGISTER){
     
-      if(operand_list[1].expression->arr_size != 3) return INVALID_OPERAND;
-      regB = registerIndex(operand_list[1].expression->arr[0].reg);
+      regB = registerIndex(operand->reg);
+      if(function == OPCODE_LD)
+        instructionEmit(a->output, (Ins_emit){OC, M, regA, regB, 0, 0});
+      else
+        instructionEmit(a->output, (Ins_emit){OC, M, 0, regB, regA, 0});
+
+    }else if(operand->type == OPERAND_TYPE_SYMBOL){
+      
+      index = findSymbol(operand->symbol, a->symbolTable);
+      if(index == -1){
+        addSymbol((Symbol){operand->symbol, 0, 0, NOTYPE, LOCAL, -1, NULL}, a->symbolTable);
+      }
+
+      addRelocation((Relocation){
+       findSection(a->current_section, a->sectionTable),
+       findSymbol(operand->symbol, a->symbolTable),
+       a->LC,
+       0,
+       (M == 2)?R_PC_12:R_ABS_12,
+       1   }, a->relocTable);
+
+      if(function == OPCODE_LD)
+        instructionEmit(a->output, (Ins_emit){OC, M, regA, regB, 0, 0});
+      else
+        instructionEmit(a->output, (Ins_emit){OC, M, 0, regB, regA, 0});
+
+    }else if(operand->type == OPERAND_TYPE_EXPRESSION){
+      Expression* expression = operand->expression; 
+      if(expression->arr_size != 3) return INVALID_OPERAND;
+      if(expression->arr[0].type != ITEM_REGISTER) return INVALID_OPERAND;
+      
+      regB = registerIndex(expression->arr[0].reg);
     
-      if(operand_list[1].expression->arr[1].type == ITEM_NUMBER){
-        eightbyte = operand_list[1].expression->arr[1].number;
-        if(operand_list[1].expression->arr[2].op == OPERATION_TYPE_SUB)
+      if(expression->arr[1].type == ITEM_NUMBER){
+        eightbyte = expression->arr[1].number;
+        
+        if(expression->arr[2].op == OPERATION_TYPE_SUB)
           eightbyte = -eightbyte;
-        instructionEmit(a->output, (Ins_emit){OC, M, 0, regB, regA, eightbyte});
+          
+        
+        if(function == OPCODE_LD)
+          instructionEmit(a->output, (Ins_emit){OC, M, regA, regB, 0, eightbyte});
+        else
+          instructionEmit(a->output, (Ins_emit){OC, M, 0, regB, regA, eightbyte});
     
-      }else if(operand_list[1].expression->arr[1].type == ITEM_SYMBOL){
-        index = findSymbol(operand_list[1].expression->arr[1].symbol, a->symbolTable);
+      }else if(expression->arr[1].type == ITEM_SYMBOL){
+
+        index = findSymbol(expression->arr[1].symbol, a->symbolTable);
         if(index == -1){
-          addSymbol((Symbol){operand_list[1].expression->arr[1].symbol, 0, 0, NOTYPE, LOCAL, -1, NULL}, a->symbolTable);
+          addSymbol((Symbol){expression->arr[1].symbol, 0, 0, NOTYPE, LOCAL, -1, NULL}, a->symbolTable);
         }
-        eightbyte = (index == -1)?0:a->symbolTable[index].value;
-        if(operand_list[1].expression->arr[2].op == OPERATION_TYPE_SUB);
-        addRelocation((Relocation){findSection(a->current_section, a->sectionTable),
-        findSymbol(operand_list[1].expression->arr[1].symbol, a->symbolTable),
-          a->LC+3, 0, R_ABS_12,
-         (operand_list[1].expression->arr[2].op == OPERATION_TYPE_SUB)?-1:1}, a->relocTable);
-        instructionEmit(a->output, (Ins_emit){OC, M, 0, regB, regA, eightbyte});
+        
+        
+        addRelocation((Relocation){
+          findSection(a->current_section, a->sectionTable),
+          findSymbol(expression->arr[1].symbol, a->symbolTable),
+          a->LC, 
+          0, 
+          (M == 2)?R_ABS_12:R_PC_12,
+          (expression->arr[2].op == OPERATION_TYPE_SUB)?-1:1}, a->relocTable);
+        
+        if(function == OPCODE_LD)
+          instructionEmit(a->output, (Ins_emit){OC, M, regA, regB, 0, 0});
+        else
+          instructionEmit(a->output, (Ins_emit){OC, M, 0, regB, regA, 0});
       }
     }
     a->LC += 4;
@@ -455,20 +434,9 @@ AsmERROR execute_function(Functions function, Operand* operand_list, int operand
     if(index == -1) return DOUBLE_SECTION; 
     
     a->current_section = a->sectionTable[index].name;
-    
-    char* string = malloc(strlen(operand_list[0].symbol)+6);
-
-    if (string != NULL) {
-      strcpy(string, operand_list[0].symbol);
-      strcat(string, "_pool");
-    }
-    Section sectionPool = (Section){string , 0, 0};
-    addSection(sectionPool, a->sectionTable);
 
     Symbol sym = {section.name, 0, 0, SECT, LOCAL, index};
     addSymbol(sym, a->symbolTable);
-    Symbol symPool = {sectionPool.name, 0, 0, SECT, LOCAL, index};
-    addSymbol(symPool, a->symbolTable);
     
     return PASS;
 
