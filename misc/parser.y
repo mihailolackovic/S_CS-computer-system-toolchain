@@ -4,7 +4,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "instructions.h"
+#include "../../inc/Assembler/instructions.h"
 
 int yylex(void);
 void yyerror(const char *s);

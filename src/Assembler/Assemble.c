@@ -289,7 +289,10 @@ AsmERROR resolveFD(Assembler_state* a){
 }
 
 AsmERROR handleEXIT(AsmERROR error, Instruction* ins){
-  printf("_______ERROR_________ TYPE: %d ___________\n", error);
+  char* errorArray[] = {"PASS", "TABLE_FULL", "INVALID_OPERAND", "DOUBLE_SYMBOL", "DOUBLE_SECTION"
+  , "EXTERN_SYMBOL_REDEFINITION", "SYMBOL_NOT_IN_SECTION", "NUMBER_OVERFLOW", "INVALID_EXPRESSION"
+  , "EXPRESSION_NOT_RELOCATABLE", "CYCLICAL_DEPENDENCY", "LITERAL_INSERTION"};
+  printf("_______ERROR_________ TYPE: %s ___________\nLINE :    ", errorArray[error]);
   printInstruction(*ins);
   if(debug == 1)
     return;
@@ -298,7 +301,7 @@ AsmERROR handleEXIT(AsmERROR error, Instruction* ins){
 };
 
 void printInstruction(Instruction ins){
-  printf("%s  ", (ins.label)?ins.label:"NO_LABEL");
+  printf("%s:  ", (ins.label)?ins.label:"NO_LABEL");
   printf("%s  ", ins.function);
   char c;
   for(int j = 0; j < ins.operand_count; j++){

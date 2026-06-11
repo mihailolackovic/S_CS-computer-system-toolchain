@@ -1,55 +1,86 @@
-ASM_OBJ = binASM/CLI_Parser.o parser.o lexer.o keywords.o \
-		binASM/emit.o binASM/Assembler_structs.o binASM/Assembler_functions.o \
-		instructions.o Assemble.o main.o
-CFLAGS = -g -Wall -Iinc/Assembler -Imisc
+CC = gcc
 
+CFLAGS = -g -Wall   \
+	-Iinc/Assembler   \
+	-Iinc/Linker      \
+	-Iinc/Emulator    \
+	-Imisc
 
-cleanup:	assembler
-	sudo cp assembler /usr/local/bin/
-	rm -f *.o *.c binASM/*.o
-	rm -f misc/parser.tab.c misc/parser.tab.h misc/lexer.c misc/lexer.h
-	rmdir binASM
+BINASM  = binASM
+BINLINK = binLINK
+BINEMU  = binEMU
 
-assembler:	$(ASM_OBJ)
-	gcc $(CFLAGS) $(ASM_OBJ) -o assembler -lfl
+ASM_SRC  := $(wildcard src/Assembler/*.c)
+LINK_SRC := $(wildcard src/Linker/*.c)
+EMU_SRC  := $(wildcard src/Emulator/*.c)
 
-main.o:	parser.o src/Assembler/main.c
-	gcc $(CFLAGS) -c src/Assembler/main.c -o main.o
+ASM_OBJ  := $(patsubst src/Assembler/%.c,$(BINASM)/%.o,$(ASM_SRC))
+LINK_OBJ := $(patsubst src/Linker/%.c,$(BINLINK)/%.o,$(LINK_SRC))
+EMU_OBJ  := $(patsubst src/Emulator/%.c,$(BINEMU)/%.o,$(EMU_SRC))
 
-Assemble.o: src/Assembler/Assemble.c inc/Assembler/Assemble.h
-	gcc $(CFLAGS) -c src/Assembler/Assemble.c -o Assemble.o
+all: assembler linker install clean distclean# emulator
+link: linker install clean distclean
+allDebug: assembler linker cleanDebug distclean# emulator
 
-binASM:
-	mkdir -p binASM
+assembler: parser lexer $(ASM_OBJ)
+	$(CC) $(CFLAGS) $(ASM_OBJ) parser.o lexer.o -o $@ -lfl
 
-binASM/emit.o:	src/Assembler/emit.c inc/Assembler/emit.h | binASM
-	gcc $(CFLAGS) -c src/Assembler/emit.c -o binASM/emit.o
+linker: $(LINK_OBJ)
+	$(CC) $(CFLAGS) $(LINK_OBJ) -o $@
 
-binASM/Assembler_functions.o: src/Assembler/Assembler_functions.c inc/Assembler/Assembler_functions.h | binASM
-	gcc $(CFLAGS) -c src/Assembler/Assembler_functions.c -o binASM/Assembler_functions.o
+emulator: $(EMU_OBJ)
+	$(CC) $(CFLAGS) $(EMU_OBJ) -o $@
 
-binASM/Assembler_structs.o: src/Assembler/Assembler_structs.c inc/Assembler/Assembler_structs.h | binASM
-	gcc $(CFLAGS) -c src/Assembler/Assembler_structs.c -o binASM/Assembler_structs.o
+$(BINASM) $(BINLINK) $(BINEMU):
+	mkdir -p $@
 
-binASM/CLI_Parser.o: src/Assembler/CLI_Parser.c inc/Assembler/CLI_Parser.h | binASM
-	gcc $(CFLAGS) -c src/Assembler/CLI_Parser.c -o binASM/CLI_Parser.o
+$(BINASM)/%.o: src/Assembler/%.c | $(BINASM)
+	$(CC) $(CFLAGS) -c $< -o $@
 
-instructions.o: misc/instructions.h
-	gcc $(CFLAGS) -c misc/instructions.c -o instructions.o
+$(BINLINK)/%.o: src/Linker/%.c | $(BINLINK)
+	$(CC) $(CFLAGS) -c $< -o $@
 
-keywords.o: misc/keywords.h
-	gcc $(CFLAGS) -c misc/keywords.c -o keywords.o
+$(BINEMU)/%.o: src/Emulator/%.c | $(BINEMU)
+	$(CC) $(CFLAGS) -c $< -o $@
 
-lexer.o: misc/lexer.l misc/keywords.h parser.o misc/parser.tab.c
+parser: parser.o
+
+parser.o: misc/parser.y
+	bison -d -o misc/parser.tab.c misc/parser.y
+	$(CC) $(CFLAGS) -c misc/parser.tab.c -o parser.o
+
+lexer: lexer.o
+
+lexer.o: misc/lexer.l parser.o
 	flex -o lex.yy.c misc/lexer.l
-	gcc $(CFLAGS) -c lex.yy.c -o lexer.o
+	$(CC) $(CFLAGS) -c lex.yy.c -o lexer.o
 
-parser.o: misc/parser.y misc/keywords.h misc/instructions.h
-	bison -o misc/parser.tab.c -d misc/parser.y
-	gcc $(CFLAGS) -c misc/parser.tab.c -o parser.o
-
+install: assembler linker
+	sudo cp assembler /usr/local/bin/
+	sudo cp linker /usr/local/bin/
 
 clean:
-	rm -f *.o *.c binASM/*.o assembler
-	rm -f misc/parser.tab.c misc/parser.tab.h misc/lexer.c misc/lexer.h
-	rmdir binASM
+	rm -f $(BINASM)/*.o
+	rm -f $(BINLINK)/*.o
+	rm -f $(BINEMU)/*.o
+	rm -f parser.o lexer.o
+	rm -f assembler linker emulator
+	rm -f misc/parser.tab.c misc/parser.tab.h
+	rm -f lex.yy.c
+	rm -f misc/lexer.h
+
+cleanDebug:
+	rm -f $(BINASM)/*.o
+	rm -f $(BINLINK)/*.o
+	rm -f $(BINEMU)/*.o
+	rm -f parser.o lexer.o
+	rm -f misc/parser.tab.c misc/parser.tab.h
+	rm -f lex.yy.c
+	rm -f misc/lexer.h
+
+distclean:
+	rmdir $(BINASM) 2>/dev/null || true
+	rmdir $(BINLINK) 2>/dev/null || true
+	rmdir $(BINEMU) 2>/dev/null || true
+
+.PHONY: all clean distclean install parser lexer

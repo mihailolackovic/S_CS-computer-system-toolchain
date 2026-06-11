@@ -1,7 +1,7 @@
 #ifndef ASSEMBLER_STRUCTS_H
 #define ASSEMBLER_STRUCTS_H
 
-#include "../../misc/instructions.h"
+#include "../../inc/Assembler/instructions.h"
 #include <stdio.h>
 #include <stdint.h>
 #include <string.h>

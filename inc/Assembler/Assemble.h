@@ -1,7 +1,7 @@
 #ifndef ASSEMBLE_H
 #define ASSEMBLE_H
 
-#include "../../misc/instructions.h"
+#include "../../inc/Assembler/instructions.h"
 #include "Assembler_functions.h"
 
 void Assemble(Instruction* instructions, int instruction_count, FILE* output);
