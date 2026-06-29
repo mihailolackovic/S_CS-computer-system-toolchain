@@ -1,4 +1,4 @@
-#include "../../inc/Assembler/emit.h"
+#include "../../inc/common/emit.h"
 
 void emit1(FILE *out, uint8_t x) {
   fwrite(&x, 1, 1, out);
@@ -34,12 +34,12 @@ void emit8(FILE *out, uint64_t x) {
 };
 
 void instructionEmit(FILE* out, Ins_emit ins){
-  int oc = ins.OC << (28);
-  int m = ins.M << (24);
-  int a = ins.A << (20);
-  int b = ins.B << (16);
-  int c = ins.C << (12);
-  int d = ins.D;
+  uint32_t oc = (uint32_t)(ins.OC & 0xF)  << 28;
+  uint32_t m  = (uint32_t)(ins.M  & 0xF)  << 24;
+  uint32_t a  = (uint32_t)(ins.A  & 0xF)  << 20;
+  uint32_t b  = (uint32_t)(ins.B  & 0xF)  << 16;
+  uint32_t c  = (uint32_t)(ins.C  & 0xF)  << 12;
+  uint32_t d  = (uint32_t)(ins.D) & 0xFFF;
   
-  emit4(out, oc + m + a + b + c + d);
+  emit4(out, oc | m | a | b | c | d);
 };

@@ -5,9 +5,19 @@
 #include <string.h>
 #include <stdlib.h>
 
+typedef enum __attribute__((__packed__)){
+  LINKER_PASS,
+  SIGNATURE_FAKE,
+  FILE_BROKEN,
+  MALLOC_FAILED,
+  LINK_ERROR_UNDEFINED_SYMBOL,
+  LINK_ERROR_MULTIPLE_DEFINITION,
+  LINK_ERROR_RELOCATION_OVERFLOW
+}LinkERROR;
+
 typedef struct{
   char* section;
-  long address;
+  unsigned long address;
 } Place;
 
 typedef enum __attribute__((__packed__)){
@@ -23,13 +33,15 @@ typedef enum __attribute__((__packed__)){
 typedef struct{
   Place* place;
   FILE** input;
+  char** inputName;
   unsigned short input_count;
   unsigned short place_count;
   Linker_arg arg;
   FILE* output;
+  char* outputT;
 
 } Linker_init;
 
-Linker_init* parse(int argc, const char** argv);
+void parse(int argc, const char** argv, Linker_init* lI);
 
 #endif

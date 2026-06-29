@@ -1,30 +1,29 @@
 #include "../../inc/Linker/Command_line_args.h"
 
-Linker_init* parse(int argc, const char** argv){
-  Linker_init* lI = malloc(sizeof(Linker_init));
-  *lI = (Linker_init){NULL, NULL, 0, 0, LINKER_ARG_NONE, NULL};
+void parse(int argc, const char** argv, Linker_init* lI){
+  *lI = (Linker_init){NULL, NULL, NULL, 0, 0, LINKER_ARG_NONE, NULL};
 
   for(int i = 1; i < argc; i++){
     if(strcmp(argv[i], "-o") == 0){
       i++;
-      FILE* output = fopen(argv[i], "wb+");
-      if(output == NULL){
+      lI->outputT = strdup(argv[i]);
+      lI->output = fopen(argv[i], "wb+");
+      if(lI->output == NULL){
         lI->arg = LINKER_ARG_FILE_OPENING_ERROR;
-        return lI;
+        return;
       }
-      lI->output = output;
     }
     else if (strcmp(argv[i], "-hex") == 0){
       if(lI->arg == LINKER_ARG_RELOCATABLE){
         lI->arg = LINKER_ARG_H_AND_R;
-        return lI;
+        return;
       }
       lI->arg = LINKER_ARG_HEX;
     }
     else if (strcmp(argv[i], "-relocatable") == 0){
       if(lI->arg == LINKER_ARG_HEX){
         lI->arg = LINKER_ARG_H_AND_R;
-        return lI;
+        return;
       }
       lI->arg = LINKER_ARG_RELOCATABLE;
     }
@@ -40,19 +39,27 @@ Linker_init* parse(int argc, const char** argv){
       lI->place[lI->place_count-1] = (Place){strdup(name), num};
     }
     else{
-      if(argv[0] == '-'){
+      if(argv[i] == '-'){
         lI->arg = LINKER_ARG_UNKOWN_OPT;
-        return lI;
-      }
-      FILE* input = fopen(argv[i], "rb+");
-      if(input == NULL){
-        lI->arg = LINKER_ARG_FILE_OPENING_ERROR;
-        return lI;
+        return;
       }
       lI->input_count++;
       lI->input = realloc(lI->input, lI->input_count * sizeof(FILE*));
-      lI->input[lI->input_count - 1] = input;
+      lI->inputName = realloc(lI->inputName, lI->input_count * sizeof(char*));
+      lI->input[lI->input_count - 1] = fopen(argv[i], "rb+");
+      if(lI->input == NULL){
+        lI->arg = LINKER_ARG_FILE_OPENING_ERROR;
+        return;
+      }
+      lI->inputName[lI->input_count - 1] = strdup(argv[i]);
     }
   }
-  return lI;
+
+  if(lI->output == NULL){
+    lI->outputT = strdup(lI->inputName[0]);
+    strcat(lI->outputT, ".hex");
+    lI->output = fopen(lI->outputT, "wb+");
+  }
+
+  return;
 };

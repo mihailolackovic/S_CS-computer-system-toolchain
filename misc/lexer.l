@@ -51,7 +51,7 @@ string {string_parts}+
 {word}: { yylval.str = strdup(strndup(yytext, strlen(yytext)-1)); return LABEL; }
 
 {number}  { yylval.number = atoi(yytext); return NUMBER; }
-{hex_number}  { yylval.number = strtol(yytext, NULL, 16); return NUMBER; }
+{hex_number}  { yylval.number = strtoul(yytext, NULL, 16); return NUMBER; }
 
 {word} {
   switch(lookup_identifier(yytext)){

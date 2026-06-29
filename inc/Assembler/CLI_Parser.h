@@ -7,9 +7,9 @@
 
 typedef enum{
   ERROR = 0,
-  OUTFILE,
   DEFAULT,
-  HELP
+  HELP,
+  DEBUG,
 } Arg;
 
 typedef struct {

@@ -24,8 +24,9 @@ Files* parse(int argc, const char** argv){
   }
 
   if (files->input != NULL)
-    if(files->output != NULL)
-      files->type = OUTFILE;
+    if(files->output != NULL){
+      files->type = DEFAULT;
+    }
     else{
       files->output = malloc(strlen(files->input) + 3);
       sprintf(files->output, "%s.o", files->input);
@@ -33,6 +34,6 @@ Files* parse(int argc, const char** argv){
     }
   else
     files->type = ERROR;
-
+    
   return files;
 };

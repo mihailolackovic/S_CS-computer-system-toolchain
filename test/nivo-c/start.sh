@@ -1,11 +1,14 @@
-ASSEMBLER=assembler
-LINKER=linker
-EMULATOR=emulator
+ASSEMBLER=./assembler
+LINKER=./linker
+EMULATOR=./emulator
+path=./test/nivo-c/
 
-${ASSEMBLER} -o main.o main.s
-${ASSEMBLER} -o handler.o handler.s
-${ASSEMBLER} -o isr_terminal.o isr_terminal.s
-${ASSEMBLER} -o isr_timer.o isr_timer.s
+clear
+
+${ASSEMBLER} -o main.o ${path}main.s
+${ASSEMBLER} -o handler.o ${path}handler.s
+${ASSEMBLER} -o isr_terminal.o ${path}isr_terminal.s
+${ASSEMBLER} -o isr_timer.o ${path}isr_timer.s
 ${LINKER} -hex \
   -place=code@0x40000000 \
   -o program.hex \

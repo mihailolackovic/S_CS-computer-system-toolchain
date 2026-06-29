@@ -1,13 +1,13 @@
 #ifndef ASSEMBLER_FUNCTIONS_H
 #define ASSEMBLER_FUNCTIONS_H
 
-#include "../../inc/Assembler/emit.h"
+#include "../../inc/common/emit.h"
 #include "Assembler_structs.h"
 #include <stdlib.h>
 
 Functions lookup_function(char* function);
 
-AsmERROR labelSymbol(char* label, Assembler_state* a);
+AsmERROR labelSymbol(char* label, Functions func, Assembler_state* a);
 
 AsmERROR execute_function(Functions function, Operand* operand_list, int operand_count, Assembler_state* a);
 

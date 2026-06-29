@@ -2,9 +2,12 @@
 #define ASSEMBLER_STRUCTS_H
 
 #include "../../inc/Assembler/instructions.h"
+#include "ObjectFile_elements.h"
 #include <stdio.h>
+#include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
+
 
 typedef enum{
   PASS,
@@ -21,11 +24,16 @@ typedef enum{
   LITERAL_INSERTION
 } AsmERROR;
 
-#define SYMBOL_TABLE_LENGHT 128
-#define SECTION_TABLE_LENGHT 32
-#define RELOC_TABLE_LENGHT 128
+AsmERROR addRelocation(Relocation relocation, Relocation* relocationTable);
+int findLastReloc(Relocation* relocationTable);
 
-typedef struct{
+int addSection(Section section, Section* sectionTable);
+int findSection(char* section, Section* sectionTable);
+
+AsmERROR addSymbol(Symbol symbol, Symbol* symbolTable);
+int findSymbol(char* symbol, Symbol* symbolTable);
+
+typedef struct ForwardDeclaration{
   union{
     Expression* expression;
     char* symbol;
@@ -34,76 +42,6 @@ typedef struct{
   int* dependency;
   OperandType type;
 } ForwardDeclaration;
-
-
-////////////////////////////////////////////////////////////
-//  RELOC  /////////////////////////////////////////////////
-////////////////////////////////////////////////////////////
-
-typedef enum{
-  UNINITIALISED,
-  R_ABS_12,
-  R_PC_12,
-  R_ABS_32,
-  R_PC_32,
-  RESOLVED
-} RelocType;
-
-typedef struct{
-  int section;
-  int symbol;
-  int offset;
-  int addend;
-  RelocType type;
-  int multiplier;
-} Relocation;
-
-AsmERROR addRelocation(Relocation relocation, Relocation* relocationTable);
-
-////////////////////////////////////////////////////////////
-//  SECTION  ///////////////////////////////////////////////
-////////////////////////////////////////////////////////////
-
-typedef struct{
-  char* name;
-  int base;
-  int lenght;
-} Section;
-
-int addSection(Section section, Section* sectionTable);
-int findSection(char* section, Section* sectionTable);
-
-////////////////////////////////////////////////////////////
-//  SYMBOLS  ///////////////////////////////////////////////
-////////////////////////////////////////////////////////////
-
-typedef enum{
-  NOTYPE,
-  DATA,
-  FUNC,
-  SECT,
-  SRC
-} SymbolType;
-typedef enum{
-  LOCAL,
-  GLOBAL,
-  EXTERN
-} SymbolBinding;
-
-typedef struct{
-  char* name;
-  int value;
-  int size;
-  SymbolType type;
-  SymbolBinding binding;
-  int section;
-  ForwardDeclaration* fd;
-} Symbol;
-
-AsmERROR addSymbol(Symbol symbol, Symbol* symbolTable);
-int findSymbol(char* symbol, Symbol* symbolTable);
-
-////////////////////////////////////////////////////////////
 
 typedef struct{
   FILE* output;
@@ -114,6 +52,7 @@ typedef struct{
   Symbol* symbolTable;
   Section* sectionTable;
   Relocation* relocTable;
+  int uniqueSym;
 } Assembler_state;
 
 ////////////////////////////////////////////////////////////
@@ -166,14 +105,16 @@ typedef struct{
 
 ////////////////////////////////////////////////////////////
 
+typedef enum{
+  status = 0,
+  handler = 1,
+  cause = 2,
+  sp = 14,
+  pc = 15
+} Register_Special;
+
 int registerIndex(char* reg);
 int evalExpression(Expression* exp, Assembler_state* a);
-
-typedef enum{
-  UND_S = -1,
-  EXTERN_S = -2,
-  ABS_S = SECTION_TABLE_LENGHT
-} SpecialSections;
 
 typedef struct{
   int section_counts[2*SECTION_TABLE_LENGHT];

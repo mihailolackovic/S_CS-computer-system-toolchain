@@ -1,6 +1,10 @@
 .vscode/
 *.o
+*.hex
+*.txt
+!TODO.txt
 a
 assembler
 linker
 emulator
+S_Obj_dump
