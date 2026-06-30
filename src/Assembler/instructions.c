@@ -26,13 +26,13 @@ void debug1(StackItem* stack){
 
 void push(Stack* stack, StackItem item){
 	if(stack->top >= stack->size - 1)
-		printf(stderr, "ERROR STACK OVERFLOW\n");
+		printf("ERROR STACK OVERFLOW\n");
 	stack->stack[++stack->top] = item;
 };
 
 StackItem pop(Stack* stack){
 	if(stack->top < 0)
-		printf(stderr, "ERROR STACK UNDERFLOW\n");
+		printf("ERROR STACK UNDERFLOW\n");
 	return stack->stack[stack->top--];
 };
 
@@ -41,7 +41,7 @@ int is_empty(Stack* stack){
 };
 StackItem peek(Stack* stack){
 	if(stack->top < 0)
-		printf(stderr, "ERROR PEEK AT EMPTY STACK\n");
+		printf("ERROR PEEK AT EMPTY STACK\n");
 	return stack->stack[stack->top];
 };
 
@@ -106,14 +106,14 @@ Expression create_expression(StackItem* infix) {
 				rank = rank + get_R(x.op);
 				
 				if (rank < 1)
-					fprintf(stderr, "ERROR INVALID EXPRESSION (Rank < 1)\n");
+					printf("ERROR INVALID EXPRESSION (Rank < 1)\n");
 			}
 
 			if (next.op != OPERATION_TYPE_CLOSE_BRACKET) {
 				push(&stack, next);
 			} else {
 				if (is_empty(&stack) || peek(&stack).op != OPERATION_TYPE_OPEN_BRACKET)
-					fprintf(stderr, "ERROR INVALID EXPRESSION (Mismatched parens)\n");
+					printf("ERROR INVALID EXPRESSION (Mismatched parens)\n");
 				pop(&stack);
 			}
 		}
@@ -126,7 +126,7 @@ Expression create_expression(StackItem* infix) {
 	}
 	
 	if (rank != 1)
-		fprintf(stderr, "ERROR INVALID EXPRESSION (Final rank was %d)\n", rank);
+		printf("ERROR INVALID EXPRESSION (Final rank was %d)\n", rank);
 
 	int count = 0;
 	for (int i = 0; i < out_idx; i++) {

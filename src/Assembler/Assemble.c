@@ -53,7 +53,7 @@ void Assemble(Instruction* instructions, int instruction_count, FILE* output){
 
 AsmERROR resolveReloc(Assembler_state* a){
   for(int i = 0; i < RELOC_TABLE_LENGHT; i++){
-    if(a->relocTable[i].type == UNINITIALISED) break; // footer reloctable
+    if(a->relocTable[i].type == UNINITIALISED) break; // footer relocTable
 
     if(a->relocTable[i].type == R_ABS_12){
       if(a->symbolTable[a->relocTable[i].symbol].section == ABS_S){

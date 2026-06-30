@@ -430,13 +430,8 @@ int resolveRelocations(
 
         if(slot == -1){
           int sm = findSectionMap(i, sym.section, sectionMap, sectionMapSize);
-          int S  = sectionMap[sm].offset + sym.value;
-          int D  = S - instruction_address;
-          if(D > 0x7FF || D < -(0x7FF + 1)){
-            fprintf(stderr, "LINKER ERROR: relocation overflow for symbol %s\n", sym.name);
-            iF[i].error = LINK_ERROR_RELOCATION_OVERFLOW;
-            continue;
-          }
+          int S = sectionMap[sm].offset + sym.value;
+          int D = S - instruction_address;
           int opcode = (*word >> 28) & 0xF;
           if(opcode == 0x3){
             uint32_t mod = (*word >> 24) & 0xF;
@@ -454,7 +449,7 @@ int resolveRelocations(
             printf("LINKER ERROR: sym_table too far from instruction at 0x%X (symbol: %s, D=%d)\n",
               instruction_address, sym.name, D);
             iF[i].error = LINK_ERROR_RELOCATION_OVERFLOW;
-            continue;
+            break;
           }
           *word = (*word & 0xFFFFF000) | (D & 0xFFF);
         }

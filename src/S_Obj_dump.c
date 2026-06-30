@@ -267,17 +267,11 @@ int readHEX(FILE* input, FILE* output){
 
   typedef struct { int load_address; int size; int file_offset; } Segment;
   Segment* segments = malloc(segmentCount * sizeof(Segment));
-
-  fprintf(output, "\n\nSegment Table:\n\nLOAD_ADDRESS  |  SIZE  |  FILE_OFFSET\n\n");
+  
   for(int i = 0; i < segmentCount; i++){
     fread(&segments[i].load_address, 4, 1, input);
     fread(&segments[i].size, 4, 1, input);
     fread(&segments[i].file_offset, 4, 1, input);
-    char* label = "";
-    if(segments[i].load_address == (int)0xFFFFFFFF) label = "  [symbol metadata]";
-    if(segments[i].load_address == (int)0xFFFFFFFE) label = "  [sym_table slots]";
-    fprintf(output, "0x%08X  |  %d  |  %d%s\n",
-      segments[i].load_address, segments[i].size, segments[i].file_offset, label);
   }
 
   HexSym* syms = NULL;
@@ -411,20 +405,28 @@ int readHEX(FILE* input, FILE* output){
     }
     free(syms);
   }
+  fprintf(output, "\n\nSegment Table:\n\nLOAD_ADDRESS  |  SIZE  |  FILE_OFFSET\n\n");
+  for(int i = 0; i < segmentCount; i++){
+    char* label = "";
+    if(segments[i].load_address == (int)0xFFFFFFFF) label = "  [symbol metadata]";
+    if(segments[i].load_address == (int)0xFFFFFFFE) label = "  [sym_table slots]";
+    fprintf(output, "0x%08X  |  %d  |  %d%s\n",
+      segments[i].load_address, segments[i].size, segments[i].file_offset, label);
+  }
 
   free(segments);
   return 0;
-}
+};
 
 char* gprtos(uint8_t reg){
   if(reg == 14) return "%sp";
   if(reg == 15) return "%pc";
-  static char buf[8][5];
+  static char buf[5][5];
   static int idx = 0;
   idx = (idx + 1) % 8;
   snprintf(buf[idx], 5, "%%r%d", reg);
   return buf[idx];
-}
+};
 
 char* csrtos(uint8_t reg){
   if(reg == 0) return "%status";
@@ -502,4 +504,4 @@ char* instructionPrinter(unsigned int instruction){
     return buf;
   }
   return "UNKNOWN 4BYTE";
-}
+};

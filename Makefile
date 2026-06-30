@@ -1,7 +1,7 @@
 CC = gcc
-CPPC = g++
+CXX = g++
 
-CFLAGS = -g -Wall   \
+CFLAGS = -g -w      \
 	-Iinc/Assembler   \
 	-Iinc/Linker      \
 	-Iinc/Emulator    \
@@ -9,9 +9,9 @@ CFLAGS = -g -Wall   \
 	-Imisc						\
 	-pthread
 
-BINASM  = binASM
+BINASM = binASM
 BINLINK = binLINK
-BINEMU  = binEMU
+BINEMU = binEMU
 BINCOMMON = binCOMMON
 
 COMMON_SRC := $(wildcard src/common/*.c)
@@ -38,7 +38,7 @@ linker: $(LINK_OBJ) $(COMMON_OBJ)
 	$(CC) $(CFLAGS) $(COMMON_OBJ) $(LINK_OBJ) -o $@
 
 emulator: $(EMU_OBJ)
-	$(CPPC) $(CFLAGS) $(EMU_OBJ) -o $@
+	$(CXX) $(CFLAGS) $(EMU_OBJ) -o $@
 
 $(BINASM) $(BINLINK) $(BINEMU) $(BINCOMMON):
 	mkdir -p $@
@@ -53,7 +53,7 @@ $(BINLINK)/%.o: src/Linker/%.c | $(BINLINK)
 	$(CC) $(CFLAGS) -c $< -o $@
 
 $(BINEMU)/%.o: src/Emulator/%.cpp | $(BINEMU)
-	$(CPPC) $(CFLAGS) -c $< -o $@
+	$(CXX) $(CFLAGS) -c $< -o $@
 
 parser: parser.o
 
@@ -73,11 +73,8 @@ install: assembler linker emulator S_Obj_dump
 	sudo cp emulator /usr/local/bin/
 	sudo cp S_Obj_dump /usr/local/bin/
 
-clean:  cleanDebug
+clean:  cleanDebug cleanFiles
 	rm -f assembler linker emulator S_Obj_dump
-	rm -f *.o
-	rm -f *.hex
-	rm -f *.txt
 
 cleanDebug:
 	rm -f $(BINASM)/*.o
@@ -99,5 +96,7 @@ cleanFiles:
 	rm -f *.o
 	rm -f *.hex
 	rm -f *.txt
+	rm -f *.s
+	rm -f *.sh
 
 .PHONY: all clean cleanFiles distclean install parser lexer link allDebug cleanDebug
