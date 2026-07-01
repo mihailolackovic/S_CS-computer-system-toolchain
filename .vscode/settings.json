@@ -1,0 +1,220 @@
+{
+  "makefile.makefilePath": "/home/ss/Desktop/Projekat/Makefile",
+  "makefile.launchConfigurations": [
+   {
+      "cwd": "/home/ss/Desktop/Projekat",
+      "binaryPath": "/home/ss/Desktop/Projekat/assembler",
+      "binaryArgs": [
+         "test/nivo-c/isr_timer.s"
+      ],
+      "stopAtEntry": true
+   },
+   {
+      "cwd": "/home/ss/Desktop/Projekat",
+      "binaryPath": "/home/ss/Desktop/Projekat/assembler",
+      "binaryArgs": [
+         "test/nivo-b/main.s"
+      ],
+      "stopAtEntry": true
+   },
+   {
+      "cwd": "/home/ss/Desktop/Projekat",
+      "binaryPath": "/home/ss/Desktop/Projekat/assembler",
+      "binaryArgs": [
+         "test/nivo-b/isr_timer.s"
+      ],
+      "stopAtEntry": true
+   },
+   {
+      "cwd": "/home/ss/Desktop/Projekat",
+      "binaryPath": "/home/ss/Desktop/Projekat/assembler",
+      "binaryArgs": [
+         "test/nivo-b/isr_terminal.s"
+      ],
+      "stopAtEntry": true
+   },
+   {
+      "cwd": "/home/ss/Desktop/Projekat",
+      "binaryPath": "/home/ss/Desktop/Projekat/assembler",
+      "binaryArgs": [
+         "test/nivo-a/main.s"
+      ],
+      "stopAtEntry": true
+   },
+   {
+      "cwd": "/home/ss/Desktop/Projekat",
+      "binaryPath": "/home/ss/Desktop/Projekat/assembler",
+      "binaryArgs": [
+         "test/test1/main1.s"
+      ],
+      "stopAtEntry": true
+   },
+   {
+      "cwd": "/home/ss/Desktop/Projekat",
+      "binaryPath": "/home/ss/Desktop/Projekat/assembler",
+      "binaryArgs": [
+         "test/nivo-c/handler.s"
+      ],
+      "stopAtEntry": true
+   },
+   {
+      "cwd": "/home/ss/Desktop/Projekat",
+      "binaryPath": "/home/ss/Desktop/Projekat/assembler",
+      "binaryArgs": [
+         "test/nivo-c/main.s"
+      ],
+      "stopAtEntry": true
+   },
+   {
+      "cwd": "/home/ss/Desktop/Projekat",
+      "binaryPath": "/home/ss/Desktop/Projekat/assembler",
+      "binaryArgs": [
+         "test/test1/main2.s"
+      ],
+      "stopAtEntry": true
+   },
+   {
+      "cwd": "/home/ss/Desktop/Projekat",
+      "binaryPath": "/home/ss/Desktop/Projekat/assembler",
+      "binaryArgs": [
+         "test/nivo-c/isr_terminal.s"
+      ],
+      "stopAtEntry": true
+   },
+   {
+      "cwd": "/home/ss/Desktop/Projekat",
+      "binaryPath": "/home/ss/Desktop/Projekat/linker",
+      "binaryArgs": [
+         "-hex",
+         "-place=data@0x4000F000",
+         "-place=text@0x40000000",
+         "-o",
+         "mem_content.hex",
+         "ulaz1.o",
+         "ulaz2.o"
+      ],
+      "stopAtEntry": true
+   },
+   {
+      "cwd": "/home/ss/Desktop/Projekat",
+      "binaryPath": "/home/ss/Desktop/Projekat/assembler",
+      "binaryArgs": [
+         "-o",
+         "main.o",
+         "/home/ss/Desktop/Projekat/test/nivo-c/main.s"
+      ],
+      "stopAtEntry": true
+   },
+   {
+      "cwd": "/home/ss/Desktop/Projekat",
+      "binaryPath": "/home/ss/Desktop/Projekat/linker",
+      "binaryArgs": [
+         "isr_terminal.o"
+      ],
+      "stopAtEntry": true
+   },
+   {
+      "cwd": "/home/ss/Desktop/Projekat",
+      "binaryPath": "/home/ss/Desktop/Projekat/S_Obj_dump",
+      "binaryArgs": [
+         "handler.o"
+      ],
+      "stopAtEntry": true
+   },
+   {
+      "cwd": "/home/ss/Desktop/Projekat",
+      "binaryPath": "/home/ss/Desktop/Projekat/S_Obj_dump",
+      "binaryArgs": [
+         "main.o"
+      ],
+      "stopAtEntry": true
+   },
+   {
+      "cwd": "/home/ss/Desktop/Projekat",
+      "binaryPath": "/home/ss/Desktop/Projekat/S_Obj_dump",
+      "binaryArgs": [
+         "program.hex"
+      ],
+      "stopAtEntry": true
+   },
+   {
+      "cwd": "/home/ss/Desktop/Projekat",
+      "binaryPath": "/home/ss/Desktop/Projekat/emulator",
+      "binaryArgs": [
+         "program.hex"
+      ],
+      "stopAtEntry": true
+   },
+   {
+      "cwd": "/home/ss/Desktop/Projekat",
+      "binaryPath": "/home/ss/Desktop/Projekat/linker",
+      "binaryArgs": [
+         "isr_terminal.o"
+      ],
+      "stopAtEntry": true
+   },
+   {
+      "cwd": "/home/ss/Desktop/Projekat",
+      "binaryPath": "/home/ss/Desktop/Projekat/linker",
+      "binaryArgs": [
+         "-hex",
+         "-place=my_code@0x40000000",
+         "-place=math@0xF0000000",
+         "-o",
+         "program.hex",
+         "handler.o",
+         "math.o",
+         "main.o",
+         "isr_terminal.o",
+         "isr_timer.o",
+         "isr_software.o"
+      ],
+      "stopAtEntry": true
+   },
+   {
+      "cwd": "/home/ss/Desktop/Projekat",
+      "binaryPath": "/home/ss/Desktop/Projekat/linker",
+      "binaryArgs": [
+         "-hex",
+         "-place=code@0x40000000",
+         "-o",
+         "program.hex",
+         "main.o",
+         "isr_terminal.o",
+         "isr_timer.o",
+         "handler.o"
+      ],
+      "stopAtEntry": true
+   },
+   {
+      "cwd": "/home/ss/Desktop/Projekat",
+      "binaryPath": "/home/ss/Desktop/Projekat/linker",
+      "binaryArgs": [
+         "-relocatable",
+         "-o",
+         "program.o",
+         "main.o",
+         "isr_terminal.o",
+         "isr_timer.o",
+         "handler.o"
+      ],
+      "stopAtEntry": true
+   },
+   {
+      "cwd": "/home/ss/Desktop/Projekat",
+      "binaryPath": "/home/ss/Desktop/Projekat/assembler",
+      "binaryArgs": []
+   },
+   {
+      "cwd": "/home/ss/Desktop/Projekat",
+      "binaryPath": "/home/ss/Desktop/Projekat/linker",
+      "binaryArgs": []
+   },
+   {
+      "cwd": "/home/ss/Desktop/Projekat",
+      "binaryPath": "/home/ss/Desktop/Projekat/emulator",
+      "binaryArgs": []
+   }
+],
+}
+

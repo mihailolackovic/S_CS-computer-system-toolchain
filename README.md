@@ -34,10 +34,25 @@ object or executable file produced along the way.
 
 The flow through the toolchain is:
 
-```
-  .s  --assembler-->  .o  --linker-->  .hex  --emulator-->  execution
-                       |                 ^
-                       +---linker -r---> .o (relocatable, re-linkable)
+
+```mermaid
+flowchart LR
+    S[".s source"] -->|assembler| O[".o (relocatable)"]
+    O -->|linker -hex| HEX[".hex (executable)"]
+    HEX -->|emulator| EXEC[execution]
+    O -->|"linker -relocatable"| O2[".o (relocatable)"]
+    O2 -->|linker -hex| HEX
+
+    subgraph dumps [ ]
+        direction LR
+        OT[".txt"]
+        O2T[".txt"]
+        HEXT[".txt"]
+    end
+
+    O -.->|S_Obj_dump| OT
+    O2 -.->|S_Obj_dump| O2T
+    HEX -.->|S_Obj_dump| HEXT
 ```
 
 The four tools are:
@@ -58,7 +73,9 @@ The four tools are:
 ## Architecture
 
 S_CS is a 32-bit, two-address, Von Neumann architecture system with a byte-
-addressable, little-endian, 2^32-byte address space. After reset the processor
+addressable, little-endian, 2^32-byte address space. Connected to the system are two peripherals in a form of an terminal and a timer.
+
+After reset the processor
 begins executing at address `0x40000000`.
 
 **Registers.** Sixteen 32-bit general-purpose registers `r0`–`r15`. `r0` is hard-
@@ -70,18 +87,34 @@ toward lower addresses. Three control and status registers exist: `status`
 
 **Instruction format.** Every instruction is four bytes:
 
-```
-  OC[31:28]  MOD[27:24]  RegA[23:20]  RegB[19:16]  RegC[15:12]  Disp[11:0]
-```
+| Byte 0 | Byte 1 | Byte 2 | Byte 3 |
+|:---:|:---:|:---:|:---:|
+| OC (bits 31–28) \| MOD (27–24) | RegA (23–20) \| RegB (19–16) | RegC (15–12) \| Disp[11:8] | Disp[7:0] |
 
 `OC` is the operation code, `MOD` the instruction modifier, `RegA`/`RegB`/`RegC`
 register indices, and `Disp` a signed 12-bit displacement.
 
-**Interrupts.** A single interrupt routine is used, its address held in `handler`.
+**Interrupts.** 
+
+A single interrupt routine is used, its address held in `handler`.
+
 On accepting an interrupt the processor pushes the status word and the return
-address onto the stack (in that order) and globally masks interrupts. The `cause`
-register identifies the source: 1 for an invalid instruction, 2 for the timer,
-3 for the terminal, and 4 for a software interrupt.
+address onto the stack (in that order) and globally masks interrupts.
+
+The `cause`
+register identifies the source:
+
+1. an invalid instruction
+2. the timer
+3. the terminal
+4. a software interrupt.
+
+Interrupt masking is handled by the `status` register, which has 3 flags
+(`0` = allowed, `1` = masked):
+
+- **bit 0** — timer (Tm) masking
+- **bit 1** — terminal (Tr) masking
+- **bit 2** — global (I) masking
 
 **Peripherals.** Memory-mapped registers occupy the 256-byte region starting at
 `0xFFFFFF00`:
@@ -103,9 +136,7 @@ Build all tools:
 make
 ```
 
-This produces the `assembler`, `linker`, `emulator`, and `S_Obj_dump` binaries 
-
-and immediately copies them to the local/bin/ directory.
+This produces the `assembler`, `linker`, `emulator`, and `S_Obj_dump` binaries and immediately copies them to the local/bin/ directory.
 
 If you want to build and leave the binaries in the CWD use:
 
