@@ -22,6 +22,12 @@ _S\_CS (Školski Računarski Sistem) is a 32-bit, two-address, Von Neumann archi
   - [Emulator](#emulator)
   - [S_Obj_dump](#s_obj_dump)
 - [Object File Format](#object-file-format)
+- [Supported features](#suported-features)
+  - [CPU instruction set](#cpu-instruction-set)
+  - [Instruction adderssing](#instruction-addressing)
+  - [Assembly language](#assembly-language)
+  - [Terminal](#terminal)
+  - [Timer](#timer)
 - [Examples](#examples)
 
 ## Overview
@@ -37,22 +43,57 @@ The flow through the toolchain is:
 
 ```mermaid
 flowchart LR
-    S[".s source"] -->|assembler| O[".o (relocatable)"]
-    O -->|linker -hex| HEX[".hex (executable)"]
-    HEX -->|emulator| EXEC[execution]
-    O -->|"linker -relocatable"| O2[".o (relocatable)"]
-    O2 -->|linker -hex| HEX
 
-    subgraph dumps [ ]
+    subgraph dumps ["text files"]
         direction LR
         OT[".txt"]
         O2T[".txt"]
         HEXT[".txt"]
     end
 
+    subgraph obj ["object files"]
+        direction LR
+        O[".o (relocatable)"]
+        HEX[".hex (executable)"]
+        O2[".o (relocatable)"]
+    end
+
+    S[".s source"] -->|assembler| O
+    O -->|linker -hex| HEX
+    HEX -->|emulator| EXEC["execution 
+    (console output)"]
+    O -->|"linker -relocatable"| O2
+    O2 -->|linker -hex| HEX
+
     O -.->|S_Obj_dump| OT
     O2 -.->|S_Obj_dump| O2T
     HEX -.->|S_Obj_dump| HEXT
+```
+***Common usage:*** assembling, linking and running multiple files that define a single program
+```mermaid
+flowchart LR
+    subgraph obj ["object files"]
+        direction LR
+        O1["input1.o"]
+        O2["input2.o"]
+        O3["input3.o"]
+        LNK(["linker -hex -o output.hex input1.o input2.o input3.o"])
+        HEX["output.hex"]
+    end
+
+    S1["input1.s"] --> ASM1(["assembler -o input1.o input1.s"])
+    S2["input2.s"] --> ASM2(["assembler -o input2.o input2.s"])
+    S3["input3.s"] --> ASM3(["assembler -o input3.o input3.s"])
+    ASM1 --> O1
+    ASM2 --> O2
+    ASM3 --> O3
+    O1 --> LNK
+    O2 --> LNK
+    O3 --> LNK
+    LNK --> HEX
+    HEX --> EMU(["emulator output.hex"])
+    EMU --> EXEC["execution 
+    (console output)"]
 ```
 
 The four tools are:
@@ -101,7 +142,7 @@ A single interrupt routine is used, its address held in `handler`.
 On accepting an interrupt the processor pushes the status word and the return
 address onto the stack (in that order) and globally masks interrupts.
 
-The `cause`
+The value of the `cause`
 register identifies the source:
 
 1. an invalid instruction
@@ -111,6 +152,9 @@ register identifies the source:
 
 Interrupt masking is handled by the `status` register, which has 3 flags
 (`0` = allowed, `1` = masked):
+|  15  |  14  |  13  |  12  |  11  |  10  |  9  |  8  |  7  |  6  |  5  |  4  |  3  |   2   |   1   |   0   |
+|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
+|     |     |     |     |     |     |     |     |     |     |     |     |     |   I   |   Tr   |   Tm   |
 
 - **bit 0** — timer (Tm) masking
 - **bit 1** — terminal (Tr) masking
@@ -257,6 +301,14 @@ each holding a full 32-bit address. An instruction that references a far symbol
 holds a 12-bit PC-relative offset to its slot; at runtime it reads the slot to
 obtain the full address. The linker deduplicates slots so that references
 resolving to the same address share one slot.
+
+## Suported features
+
+### CPU instruction set
+### Instruction adderssing
+### Assembly language
+### Terminal
+### Timer
 
 ## Examples
 
