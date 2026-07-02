@@ -14,13 +14,13 @@ _S\_CS (Školski Računarski Sistem) is a 32-bit, two-address, Von Neumann archi
 ## Table of Contents
 
 - [Overview](#overview)
-- [Architecture](#architecture)
 - [Building](#building)
 - [Usage](#usage)
   - [Assembler](#assembler)
   - [Linker](#linker)
   - [Emulator](#emulator)
   - [S_Obj_dump](#s_obj_dump)
+- [Architecture](#architecture)
 - [Object File Format](#object-file-format)
 - [Supported features](#suported-features)
   - [CPU instruction set](#cpu-instruction-set)
@@ -40,22 +40,45 @@ object or executable file produced along the way.
 
 The flow through the toolchain is:
 
+```mermaid
+flowchart LR
+
+    OT[".txt"]
+    O2T[".txt"]
+    HEXT[".txt"]
+    O[".o (relocatable)"]
+    HEX[".hex (executable)"]
+    O2[".o (relocatable)"]
+
+    S[".s source"] -->|assembler| O
+    O -->|linker -hex| HEX
+    HEX -->|emulator| EXEC["execution 
+    (console output)"]
+    O -->|"linker -relocatable"| O2
+    O2 -->|linker -hex| HEX
+
+    O -.->|S_Obj_dump| OT
+    O2 -.->|S_Obj_dump| O2T
+    HEX -.->|S_Obj_dump| HEXT
+```
+<details>
+<summary>better graph (broken on github)</summary>
 
 ```mermaid
 flowchart LR
 
     subgraph dumps ["text files"]
-        direction LR
-        OT[".txt"]
-        O2T[".txt"]
-        HEXT[".txt"]
+      direction LR
+      OT[".txt"]
+      O2T[".txt"]
+      HEXT[".txt"]
     end
 
-    subgraph obj ["object files"]
-        direction LR
-        O[".o (relocatable)"]
-        HEX[".hex (executable)"]
-        O2[".o (relocatable)"]
+  subgraph obj ["object files"]
+      direction LR
+      O[".o (relocatable)"]
+      HEX[".hex (executable)"]
+      O2[".o (relocatable)"]
     end
 
     S[".s source"] -->|assembler| O
@@ -69,16 +92,45 @@ flowchart LR
     O2 -.->|S_Obj_dump| O2T
     HEX -.->|S_Obj_dump| HEXT
 ```
+</details><br>
+
 ***Common usage:*** assembling, linking and running multiple files that define a single program
+
+```mermaid
+flowchart LR
+    O1["input1.o"]
+    O2["input2.o"]
+    O3["input3.o"]
+    LNK(["linker -hex -o output.hex input1.o input2.o input3.o"])
+    HEX["output.hex"]
+   
+    S1["input1.s"] --> ASM1(["assembler -o input1.o input1.s"])
+    S2["input2.s"] --> ASM2(["assembler -o input2.o input2.s"])
+    S3["input3.s"] --> ASM3(["assembler -o input3.o input3.s"])
+    ASM1 --> O1
+    ASM2 --> O2
+    ASM3 --> O3
+    O1 --> LNK
+    O2 --> LNK
+    O3 --> LNK
+    LNK --> HEX
+    HEX --> EMU(["emulator output.hex"])
+    EMU --> EXEC["execution 
+    (console output)"]
+```
+
+<details>
+<summary>better graph (broken on github)</summary>
+
 ```mermaid
 flowchart LR
     subgraph obj ["object files"]
-        direction LR
-        O1["input1.o"]
-        O2["input2.o"]
-        O3["input3.o"]
-        LNK(["linker -hex -o output.hex input1.o input2.o input3.o"])
-        HEX["output.hex"]
+      direction LR
+      O1["input1.o"]
+      O2["input2.o"]
+      O3["input3.o"]
+      LNK(["linker -hex -o output.hex input1.o input2.o input3.o"])
+      HEX["output.hex"]
     end
 
     S1["input1.s"] --> ASM1(["assembler -o input1.o input1.s"])
@@ -96,6 +148,8 @@ flowchart LR
     (console output)"]
 ```
 
+</details><br>
+
 The four tools are:
 
 - **assembler** — a single-pass assembler that translates one assembly source
@@ -110,65 +164,6 @@ The four tools are:
 - **S_Obj_dump** — a disassembler that reads object and executable files and
   prints their sections, symbol table, relocations, and disassembled
   instructions.
-
-## Architecture
-
-S_CS is a 32-bit, two-address, Von Neumann architecture system with a byte-
-addressable, little-endian, 2^32-byte address space. Connected to the system are two peripherals in a form of an terminal and a timer.
-
-After reset the processor
-begins executing at address `0x40000000`.
-
-**Registers.** Sixteen 32-bit general-purpose registers `r0`–`r15`. `r0` is hard-
-wired to zero. `r15` is the program counter (`pc`) and holds the address of the
-next instruction to execute. `r14` is the stack pointer (`sp`); the stack grows
-toward lower addresses. Three control and status registers exist: `status`
-(processor status word), `handler` (interrupt routine address), and `cause`
-(interrupt cause).
-
-**Instruction format.** Every instruction is four bytes:
-
-| Byte 0 | Byte 1 | Byte 2 | Byte 3 |
-|:---:|:---:|:---:|:---:|
-| OC (bits 31–28) \| MOD (27–24) | RegA (23–20) \| RegB (19–16) | RegC (15–12) \| Disp[11:8] | Disp[7:0] |
-
-`OC` is the operation code, `MOD` the instruction modifier, `RegA`/`RegB`/`RegC`
-register indices, and `Disp` a signed 12-bit displacement.
-
-**Interrupts.** 
-
-A single interrupt routine is used, its address held in `handler`.
-
-On accepting an interrupt the processor pushes the status word and the return
-address onto the stack (in that order) and globally masks interrupts.
-
-The value of the `cause`
-register identifies the source:
-
-1. an invalid instruction
-2. the timer
-3. the terminal
-4. a software interrupt.
-
-Interrupt masking is handled by the `status` register, which has 3 flags
-(`0` = allowed, `1` = masked):
-|  15  |  14  |  13  |  12  |  11  |  10  |  9  |  8  |  7  |  6  |  5  |  4  |  3  |   2   |   1   |   0   |
-|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
-|     |     |     |     |     |     |     |     |     |     |     |     |     |   I   |   Tr   |   Tm   |
-
-- **bit 0** — timer (Tm) masking
-- **bit 1** — terminal (Tr) masking
-- **bit 2** — global (I) masking
-
-**Peripherals.** Memory-mapped registers occupy the 256-byte region starting at
-`0xFFFFFF00`:
-
-- `term_out` (`0xFFFFFF00`) — writing a value displays the corresponding ASCII
-  character.
-- `term_in` (`0xFFFFFF04`) — holds the ASCII code of the last key pressed; a
-  keypress also raises a terminal interrupt.
-- `tim_cfg` (`0xFFFFFF10`) — timer period configuration; the timer periodically
-  raises an interrupt.
 
 ## Building
 
@@ -269,6 +264,66 @@ Usage:
 ```
 S_Obj_dump <input_file>
 ```
+
+## Architecture
+
+S_CS is a 32-bit, two-address, Von Neumann architecture system with a byte-
+addressable, little-endian, 2^32-byte address space. Connected to the system are two peripherals in a form of an terminal and a timer.
+
+After reset the processor
+begins executing at address `0x40000000`.
+
+**Registers.** Sixteen 32-bit general-purpose registers `r0`–`r15`. `r0` is hard-
+wired to zero. `r15` is the program counter (`pc`) and holds the address of the
+next instruction to execute. `r14` is the stack pointer (`sp`); the stack grows
+toward lower addresses. Three control and status registers exist: `status`
+(processor status word), `handler` (interrupt routine address), and `cause`
+(interrupt cause).
+
+**Instruction format.** Every instruction is four bytes:
+
+| Byte 0 | Byte 1 | Byte 2 | Byte 3 |
+|:---:|:---:|:---:|:---:|
+| OC (bits 31–28) \| MOD (27–24) | RegA (23–20) \| RegB (19–16) | RegC (15–12) \| Disp[11:8] | Disp[7:0] |
+
+`OC` is the operation code, `MOD` the instruction modifier, `RegA`/`RegB`/`RegC`
+register indices, and `Disp` a signed 12-bit displacement.
+
+**Interrupts.** 
+
+A single interrupt routine is used, its address held in `handler`.
+
+On accepting an interrupt the processor pushes the status word and the return
+address onto the stack (in that order) and globally masks interrupts.
+
+The value of the `cause`
+register identifies the source:
+
+1. an invalid instruction
+2. the timer
+3. the terminal
+4. a software interrupt.
+
+Interrupt masking is handled by the `status` register, which has 3 flags
+(`0` = allowed, `1` = masked):
+|  15  |  14  |  13  |  12  |  11  |  10  |  9  |  8  |  7  |  6  |  5  |  4  |  3  |   2   |   1   |   0   |
+|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
+|     |     |     |     |     |     |     |     |     |     |     |     |     |   I   |   Tr   |   Tm   |
+
+- **bit 0** — timer (Tm) masking
+- **bit 1** — terminal (Tr) masking
+- **bit 2** — global (I) masking
+
+**Peripherals.** Memory-mapped registers occupy the 256-byte region starting at
+`0xFFFFFF00`:
+
+- `term_out` (`0xFFFFFF00`) — writing a value displays the corresponding ASCII
+  character.
+- `term_in` (`0xFFFFFF04`) — holds the ASCII code of the last key pressed; a
+  keypress also raises a terminal interrupt.
+- `tim_cfg` (`0xFFFFFF10`) — timer period configuration; the timer periodically
+  raises an interrupt.
+
 
 ## Object File Format
 
