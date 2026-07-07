@@ -7,6 +7,8 @@ void parse(int argc, const char** argv, Linker_init* lI){
     if(strcmp(argv[i], "-o") == 0){
       i++;
       lI->outputT = strdup(argv[i]);
+      lI->outputT1 = strdup(lI->outputT);
+      strcat(lI->outputT1, ".1.txt");
       lI->output = fopen(argv[i], "wb+");
       if(lI->output == NULL){
         lI->arg = LINKER_ARG_FILE_OPENING_ERROR;
@@ -57,9 +59,17 @@ void parse(int argc, const char** argv, Linker_init* lI){
 
   if(lI->output == NULL){
     lI->outputT = strdup(lI->inputName[0]);
+    lI->outputT1 = strdup(lI->outputT);
+    strcat(lI->outputT1, "1.txt");
     strcat(lI->outputT, ".hex");
     lI->output = fopen(lI->outputT, "wb+");
   }
+
+  if(lI->arg == LINKER_ARG_HEX){
+    lI->outputT1F = fopen(lI->outputT1, "w");
+  }
+  else
+    lI->outputT1F = NULL;
 
   return;
 };

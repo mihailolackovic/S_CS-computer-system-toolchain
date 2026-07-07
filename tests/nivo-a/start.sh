@@ -1,7 +1,7 @@
 ASSEMBLER=./assembler
 LINKER=./linker
 EMULATOR=./emulator
-path=/home/ss/Desktop/Projekat/test/nivo-a/
+path=./tests/nivo-a/
 
 clear
 
@@ -11,12 +11,8 @@ ${ASSEMBLER} -o handler.o ${path}handler.s
 ${ASSEMBLER} -o isr_timer.o ${path}isr_timer.s
 ${ASSEMBLER} -o isr_terminal.o ${path}isr_terminal.s
 ${ASSEMBLER} -o isr_software.o ${path}isr_software.s
-${LINKER} -relocatable \
-  -place=my_code@0x40000000 -place=math@0xF0000000 \
-  -o program1.o \
-  handler.o math.o main.o isr_terminal.o isr_timer.o isr_software.o
 ${LINKER} -hex \
   -place=my_code@0x40000000 -place=math@0xF0000000 \
   -o program.hex \
-  program1.o
+  handler.o math.o main.o isr_terminal.o isr_timer.o isr_software.o
 ${EMULATOR} program.hex

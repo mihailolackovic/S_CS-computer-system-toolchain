@@ -185,9 +185,9 @@ int readO(FILE* input, FILE* output){
           }
         }
         if(relsym)
-          fprintf(output, "0x%08X:   %-40s ; <%s>\n", LC, instructionPrinter(instruction), relsym);
+          fprintf(output, "0x%08X:  %08X  %-40s ; <%s>\n", LC, instruction, instructionPrinter(instruction), relsym);
         else
-          fprintf(output, "0x%08X:   %s\n", LC, instructionPrinter(instruction));
+          fprintf(output, "0x%08X:  %08X  %s\n", LC, instruction, instructionPrinter(instruction));
         LC += 4;
       }
     }

@@ -34,7 +34,7 @@ void Linker(Linker_init* lI){
 
   for(int i = 0; i < lI->input_count; i++){
     if(iF[i].error == LINK_ERROR_MULTIPLE_DEFINITION){
-      printf("LINKER ERROR: multiple definitions for global symbol: %s, in file %s\n", iF[i].symbolTable[iF[i].symbolTable_count].name, iF[i].file_name);
+      printf("\n\nLINKER ERROR: multiple definitions for global symbol: %s, in file %s\n\n", iF[i].symbolTable[iF[i].symbolTable_count].name, iF[i].file_name);
       return;
     }
   }
@@ -47,12 +47,14 @@ void Linker(Linker_init* lI){
 
   for(int i = 0; i < lI->input_count; i++){
     if(iF[i].error != LINKER_ARG_NONE){
-      printf("LINKER ERROR: relocation failed in %s\n", iF[i].file_name);
+      printf("\n\nLINKER ERROR: relocation failed in %s\n\n", iF[i].file_name);
       return;
     }
   }
 
   generateHex(lI, iF, mergedSectionTable, mergedSectionTableSize, sectionMap,sectionMapSize, globalSymbolTable, globalSymbolTableSize);
+
+  ouputText(lI);
 
   return;
 };

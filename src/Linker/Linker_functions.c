@@ -787,11 +787,11 @@ void generateRelocatable(Linker_init* lI, InputFile* iF, MergedSection* mergedSe
       }
 
       Relocation nr;
-      nr.section    = realIdx;
-      nr.symbol     = remap[i][rel.symbol];
-      nr.offset     = f_off + rel.offset;
-      nr.addend     = rel.addend;
-      nr.type       = rel.type;
+      nr.section = realIdx;
+      nr.symbol = remap[i][rel.symbol];
+      nr.offset = f_off + rel.offset;
+      nr.addend = rel.addend;
+      nr.type = rel.type;
       nr.multiplier = 1;
       newRel[newRelCount++] = nr;
     }
@@ -908,3 +908,78 @@ void generateRelocatable(Linker_init* lI, InputFile* iF, MergedSection* mergedSe
   free(secLens);
   free(secNameOffset);
 };
+
+void ouputText(Linker_init* lI){
+  FILE* input  = lI->output;
+  FILE* output = lI->outputT1F;
+
+  int segmentTableOffset;
+  fseek(input, 0x08, SEEK_SET);
+  fread(&segmentTableOffset, 4, 1, input);
+
+  fseek(input, segmentTableOffset, SEEK_SET);
+  int segmentCount;
+  fread(&segmentCount, 4, 1, input);
+
+  typedef struct { unsigned int load_address; int size; int file_offset; } Segment;
+  Segment* segments = malloc(segmentCount * sizeof(Segment));
+  int loadable = 0;
+  for(int i = 0; i < segmentCount; i++){
+    unsigned int la; int sz, fo;
+    fread(&la, 4, 1, input);
+    fread(&sz, 4, 1, input);
+    fread(&fo, 4, 1, input);
+    if(la == 0xFFFFFFFF || la == 0xFFFFFFFE) continue;
+    segments[loadable].load_address = la;
+    segments[loadable].size = sz;
+    segments[loadable].file_offset = fo;
+    loadable++;
+  }
+
+  for(int i = 1; i < loadable; i++){
+    Segment key = segments[i];
+    int j = i - 1;
+    while(j >= 0 && segments[j].load_address > key.load_address){
+      segments[j+1] = segments[j];
+      j--;
+    }
+    segments[j+1] = key;
+  }
+  
+  int i = 0;
+  while(i < loadable){
+    unsigned int run_start = segments[i].load_address;
+    unsigned int run_end = run_start + segments[i].size;
+    int j = i;
+    while(j + 1 < loadable && segments[j+1].load_address <= run_end){
+      unsigned int e = segments[j+1].load_address + segments[j+1].size;
+      if(e > run_end) run_end = e;
+      j++;
+    }
+
+    unsigned int grid_start = run_start - (run_start % 8);
+    unsigned int grid_end = run_end + (8 - run_end % 8) % 8;
+    int buf_size = grid_end - grid_start;
+    uint8_t* buf = calloc(buf_size, 1);
+
+    
+    for(int k = i; k <= j; k++){
+      fseek(input, segments[k].file_offset, SEEK_SET);
+      unsigned int dst = segments[k].load_address - grid_start;
+      fread(buf + dst, 1, segments[k].size, input);
+    }
+
+    
+    for(int off = 0; off < buf_size; off += 8){
+      fprintf(output, "%08X: ", grid_start + off);
+      for(int b = 0; b < 8; b++)
+        fprintf(output, b == 0 ? "%02X" : " %02X", buf[off + b]);
+      fprintf(output, "\n");
+    }
+
+    free(buf);
+    i = j + 1;
+  }
+
+  free(segments);
+}

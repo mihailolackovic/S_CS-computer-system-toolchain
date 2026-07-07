@@ -39,6 +39,8 @@ typedef struct{
   Linker_arg arg;
   FILE* output;
   char* outputT;
+  FILE* outputT1F;
+  char* outputT1;
 
 } Linker_init;
 

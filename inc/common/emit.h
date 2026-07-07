@@ -19,6 +19,10 @@ void emit3(FILE *out, uint32_t x);
 void emit4(FILE *out, uint32_t x);
 void emit8(FILE *out, uint64_t x);
 
+void fprint1(FILE *out, uint8_t x);
+void fprint4(FILE *out, uint32_t x);
+void fprint8(FILE *out, uint64_t x);
+
 void instructionEmit(FILE* out, Ins_emit ins);
 
 #endif

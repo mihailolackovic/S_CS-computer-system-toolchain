@@ -23,10 +23,14 @@ int resolveRelocations(
   GlobalSymbol* globalSymbolTable,
   int globalSymbolCount);
 
+void generateRelocatable(Linker_init* lI, InputFile* iF, MergedSection* mergedSectionTable, int mergedSectionTableSize);
+
 void generateHex(Linker_init* lI, InputFile* iF, MergedSection* mergedSectionTable, 
   int mergedSectionTableSize, SectionMap* sectionMap, int sectionMapSize,
   GlobalSymbol* globalSymbolTable, int globalSymbolCount);
 
 
+
+void ouputText(Linker_init* lI);
   
 #endif

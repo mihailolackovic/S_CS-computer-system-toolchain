@@ -3,7 +3,7 @@
 int main(int argc, const char** argv){
   
   if(argc != 2){
-    printf("\nEMULATOR: Error unknown option only one executable file allowed!\n");
+    printf("\n\nEMULATOR: Error unknown option only one executable S_ELF file allowed!\n\n");
     return 1;
   }
 
@@ -14,7 +14,7 @@ int main(int argc, const char** argv){
   fread(&signature, 8, 1, input);
 
   if(signature != 0x3436464C455F5300){
-    printf("\nEMULATOR: Bad signature only executable files allowed!\n");
+    printf("\n\nEMULATOR: Bad signature only executable S_ELF files allowed!\n\n");
     return 2;
   }
 

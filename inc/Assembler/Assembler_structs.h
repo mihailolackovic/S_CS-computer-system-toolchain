@@ -45,7 +45,8 @@ typedef struct ForwardDeclaration{
 
 typedef struct{
   FILE* output;
-  int assembler_flag;
+  short assembler_flag;
+  short data_flag;
   int LC;
   int headerOffset;
   char* current_section;

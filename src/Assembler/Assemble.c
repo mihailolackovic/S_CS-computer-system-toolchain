@@ -7,7 +7,7 @@ void Assemble(Instruction* instructions, int instruction_count, FILE* output){
   Section sectionTable[SECTION_TABLE_LENGHT] = {0};
   Relocation relocTable[RELOC_TABLE_LENGHT] = {0};
 
-  Assembler_state a = {output, 1, 0, 0, NULL, symbolTable, sectionTable, relocTable, NULL, 0};
+  Assembler_state a = {output, 1, -1, 0, 0, NULL, symbolTable, sectionTable, relocTable, NULL, 0};
 
   int index = 0;
   AsmERROR error = PASS;

@@ -25,16 +25,16 @@ int main(int argc, const char** argv){
 
   FILE* output = fopen(files->output, "wb+");
   if (!output) {
-    perror("ASSMEBLER: fopen error");
+    printf("ASSMEBLER: fopen error");
     return;
   }
   
   Assemble(instructions, instruction_count, output);
 
   fclose(output);
-
+  
   char string[255];
-  if(argv[0][0] == ".")
+  if(argv[0][0] == '.' || argv[0][0] == '/' )
     sprintf( string, "./S_Obj_dump %s", files->output);
   else
     sprintf( string, "S_Obj_dump %s", files->output);

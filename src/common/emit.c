@@ -43,3 +43,23 @@ void instructionEmit(FILE* out, Ins_emit ins){
   
   emit4(out, oc | m | a | b | c | d);
 };
+
+void fprint1(FILE *out, uint8_t x){
+  fprintf(out, "%02X ", x);
+};
+void fprint4(FILE *out, uint32_t x){
+  fprint1(out, (x >> 24) & 0xff);
+  fprint1(out, (x >> 16) & 0xff);
+  fprint1(out, (x >> 8) & 0xff);
+  fprint1(out, x & 0xff);
+};
+void fprint8(FILE *out, uint64_t x){
+  fprint1(out, (x >> 56) & 0xff);
+  fprint1(out, (x >> 48) & 0xff);
+  fprint1(out, (x >> 40) & 0xff);
+  fprint1(out, (x >> 32) & 0xff);
+  fprint1(out, (x >> 24) & 0xff);
+  fprint1(out, (x >> 16) & 0xff);
+  fprint1(out, (x >> 8) & 0xff);
+  fprint1(out, x & 0xff);
+};

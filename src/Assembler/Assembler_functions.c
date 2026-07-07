@@ -37,8 +37,10 @@ AsmERROR labelSymbol(char* label, Functions func, Assembler_state* a){
     a->symbolTable[symbolIndex].value = a->LC;
     a->symbolTable[symbolIndex].section = findSection(a->current_section, a->sectionTable);
   }
-  if(func == DIRECTIVE_WORD || func == DIRECTIVE_SKIP)      //overload a->asmflag-a da prenese informaciju
-    a->assembler_flag = findSymbol(label, a->symbolTable);  //koji simbol treba da updatuje  
+  if(func == DIRECTIVE_WORD || func == DIRECTIVE_SKIP)
+    a->data_flag = findSymbol(label, a->symbolTable);
+  else
+    a->data_flag = -1;
   return PASS;
 };
 
@@ -504,11 +506,11 @@ case OPCODE_LD:
       a->LC += 4;
       word_size += 4;
     }
-    if(a->assembler_flag > 1){
-      a->symbolTable[a->assembler_flag].type = DATA;
-      a->symbolTable[a->assembler_flag].size = word_size;
-      a->assembler_flag = 1;
+    if(a->data_flag >= 0 && a->data_flag < SYMBOL_TABLE_LENGHT){
+      a->symbolTable[a->data_flag].type = DATA;
+      a->symbolTable[a->data_flag].size = word_size;
     }
+    a->data_flag = -1;
     return PASS;
 
   case DIRECTIVE_SKIP:
@@ -517,11 +519,13 @@ case OPCODE_LD:
     if(operand_list[0].type != OPERAND_TYPE_NUMBER) return INVALID_OPERAND;
     for(int i = 0; i < operand_list[0].number; i++)
       emit1(a->output, 0);
-    if(a->assembler_flag > 1){
-      a->symbolTable[a->assembler_flag].type = DATA;
-      a->symbolTable[a->assembler_flag].size = operand_list[0].number;
-      a->assembler_flag = 1;
+
+    if(a->data_flag >= 0 && a->data_flag < SYMBOL_TABLE_LENGHT){
+      a->symbolTable[a->data_flag].type = DATA;
+      a->symbolTable[a->data_flag].size = operand_list[0].number;
     }
+
+    a->data_flag = -1;
     a->LC += operand_list[0].number;
     return PASS;
 
