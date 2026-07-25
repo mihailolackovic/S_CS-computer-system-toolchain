@@ -1,7 +1,7 @@
 #include "../../inc/Linker/Command_line_args.h"
 
 void parse(int argc, const char** argv, Linker_init* lI){
-  *lI = (Linker_init){NULL, NULL, NULL, 0, 0, LINKER_ARG_NONE, NULL};
+  *lI = (Linker_init){NULL, NULL, NULL, 0, 0, LINKER_ARG_NONE, NULL, NULL, 0, 10};
 
   for(int i = 1; i < argc; i++){
     if(strcmp(argv[i], "-o") == 0){

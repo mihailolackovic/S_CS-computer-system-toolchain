@@ -13,6 +13,8 @@ int createSectionMap(Linker_init* lI, InputFile* iF, MergedSection* mergedSectio
 
 int createGlobalSymbolTable(Linker_init* lI, InputFile* iF, SectionMap* sectionMap, int sectionTableSize, GlobalSymbol* globalSymbolTable);
 
+int checkTypes(Linker_init* lI, InputFile* iF, GlobalSymbol* globalSymbolTable, int globalSymbolCount);
+
 int resolveRelocations(
   Linker_init* lI,
   InputFile* iF,

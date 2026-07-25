@@ -1,5 +1,6 @@
 #ifndef OBJECT_FILE_ELEMENTS_H
 #define OBJECT_FILE_ELEMENTS_H
+#include <string.h>
 ////////////////////////////////////////////////////////////
 //  RELOC  /////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////
@@ -64,7 +65,8 @@ typedef enum{
 typedef enum{
   LOCAL,
   GLOBAL,
-  EXTERN
+  EXTERN,
+  WEAK
 } SymbolBinding;
 
 typedef struct{
@@ -79,6 +81,8 @@ typedef struct{
 
 int addSymbol_O(Symbol symbol, Symbol* symbolTable, int symbolTable_lenght);
 int findSymbol_O(char* symbol, Symbol* symbolTable, int symbolTable_lenght);
+
+SymbolType tot(char* type);
 
 ////////////////////////////////////////////////////////////
 #endif

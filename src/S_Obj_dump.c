@@ -102,7 +102,7 @@ int readO(FILE* input, FILE* output){
   int symbolTablePoolOffset = sectionTable[sectionEntryCount-4].base;
   int symbolTableSize = sectionTable[sectionEntryCount-3].lenght;
   int symbolTableOffset = sectionTable[sectionEntryCount-3].base;
-  int symbolTableEntryCount = symbolTableSize / 16;
+  int symbolTableEntryCount = symbolTableSize / 16; 
   int relocTableSize = sectionTable[sectionEntryCount-2].lenght;
   int relocTableOffset = sectionTable[sectionEntryCount-2].base;
   int relocTableEntryCount = relocTableSize / 20;

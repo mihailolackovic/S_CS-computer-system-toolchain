@@ -23,10 +23,10 @@ int main(int argc, const char** argv){
   fclose(lI->output);
 
   char string[255];
-  if(argv[0][0] == ".")
+  if(argv[0][0] == '.' || argv[0][0] == '/')
     sprintf( string, "./S_Obj_dump %s", lI->outputT);
   else
-    sprintf( string, "S_Obj_dump %s", lI->outputT);
+    sprintf( string, "./S_Obj_dump %s", lI->outputT);
 
   system(string);
 

@@ -48,6 +48,8 @@ int findSectionMap(int file, int section, SectionMap* sectionMap, int size);
 typedef struct{
   char* name;
   unsigned long value;
+  unsigned long weakness;
+  SymbolType type;
 } GlobalSymbol;
 
 int findGlobalSymbol(char* name, GlobalSymbol* table, int size);

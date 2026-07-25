@@ -90,16 +90,30 @@ AsmERROR execute_function(Functions function, Operand* operand_list, int operand
     return PASS;
 
   case OPCODE_POP:
-    if(operand_count != 1) return INVALID_OPERAND;
     if(operand_list[0].type != OPERAND_TYPE_REGISTER) return INVALID_OPERAND;
-    instructionEmit(a->output, (Ins_emit){0x9, 3, registerIndex(operand_list[0].reg), 14, 0, 0x4});
-    a->LC += 4;
+    if(operand_list[0].dereferance_flag == 3){
+      for(int i = 0; i < operand_count; i++){
+        instructionEmit(a->output, (Ins_emit){0x9, 3, registerIndex(operand_list[i].reg), 14, 0, 0x4});
+        a->LC += 4;
+      }
+    }
+    else{
+      instructionEmit(a->output, (Ins_emit){0x9, 3, registerIndex(operand_list[0].reg), 14, 0, 0x4});
+      a->LC += 4;
+    }
     return PASS;
   case OPCODE_PUSH:
-    if(operand_count != 1) return INVALID_OPERAND;
     if(operand_list[0].type != OPERAND_TYPE_REGISTER) return INVALID_OPERAND;
-    instructionEmit(a->output, (Ins_emit){0x8, 1, 14, 0, registerIndex(operand_list[0].reg), 0xFFFC});
-    a->LC += 4;
+    if(operand_list[0].dereferance_flag == 3){
+      for(int i = 0; i < operand_count; i++){
+        instructionEmit(a->output, (Ins_emit){0x8, 1, 14, 0, registerIndex(operand_list[i].reg), 0xFFFC});
+        a->LC += 4;
+      }
+    }
+    else{
+      instructionEmit(a->output, (Ins_emit){0x8, 1, 14, 0, registerIndex(operand_list[0].reg), 0xFFFC});
+      a->LC += 4;
+    }
     return PASS;
 
   case OPCODE_SHR:
@@ -373,6 +387,16 @@ case OPCODE_LD:
       a->LC += 4;
       return PASS;
     }
+    else if(expression->arr[1].type == ITEM_REGISTER){
+    regB = registerIndex(expression->arr[0].reg);
+    regC = registerIndex(expression->arr[1].reg);
+    if(function == OPCODE_LD)
+      instructionEmit(a->output, (Ins_emit){OC, 0x2, regA, regB, regC, 0});
+    else
+      instructionEmit(a->output, (Ins_emit){OC, 0x0, regC, regB, regA, 0});
+    a->LC += 4;
+    return PASS;
+    }
   }
   return INVALID_OPERAND;
 
@@ -383,14 +407,51 @@ case OPCODE_LD:
   case OPCODE_DIV:
     if(M == 0x00)  M = 0x03;
   case OPCODE_ADD:
-    if(operand_count != 2)  return INVALID_OPERAND;
-    if(operand_list[0].type != OPERAND_TYPE_REGISTER || operand_list[0].dereferance_flag != 0) return INVALID_OPERAND;
-    if(operand_list[1].type != OPERAND_TYPE_REGISTER || operand_list[0].dereferance_flag != 0) return INVALID_OPERAND;
-    regA = regB = registerIndex(operand_list[1].reg);
-    regC = registerIndex(operand_list[0].reg);
-    instructionEmit(a->output, (Ins_emit) {0x5, M, regA, regB, regC, 0});
-    a->LC += 4;
-    return PASS;
+    if(operand_list[0].type != OPERAND_TYPE_REGISTER) return INVALID_OPERAND;
+    if(operand_list[1].type != OPERAND_TYPE_EXPRESSION){
+      regA = regB = registerIndex(operand_list[1].reg);
+      regC = registerIndex(operand_list[0].reg);
+      instructionEmit(a->output, (Ins_emit) {0x5, M, regA, regB, regC, 0});
+      a->LC += 4;
+      return PASS;
+    }else{
+      regB = registerIndex(operand_list[1].expression->arr[0].reg);
+      regA = registerIndex(operand_list[0].reg);
+      for(int i = 1; i < 5;i++){
+        if(i != regA){
+          if(i != regB){
+            regC = i;
+            break;
+          }
+        }
+        continue;
+      }
+
+      //Push regB;Push regC;ld regC ;sh regB; add regA regB; pop regB;pop regB
+      instructionEmit(a->output, (Ins_emit){0x8, 1, 14, 0, regB, 0xFFFC});
+      a->LC += 4;
+      instructionEmit(a->output, (Ins_emit){0x8, 1, 14, 0, regC, 0xFFFC});
+      a->LC += 4;
+
+      byte = (operand_list[1].expression->arr[1].op == 5)?0:1;
+      number = operand_list[1].expression->arr[2].number;
+
+      instructionEmit(a->output, (Ins_emit){0x9, 0x1, regC, 0, 0, number});
+      a->LC += 4;
+
+      instructionEmit(a->output, (Ins_emit){7,byte,regB,regB, regC, 0});
+      a->LC += 4;
+
+      instructionEmit(a->output, (Ins_emit){0x5, M, regA, regA, regB, 0});
+      a->LC += 4;
+
+      instructionEmit(a->output, (Ins_emit){0x9, 3, regC, 14, 0, 0x4});
+      a->LC += 4;
+
+      instructionEmit(a->output, (Ins_emit){0x9, 3, regB, 14, 0, 0x4});
+      a->LC += 4;
+      return PASS;
+    }
 
   case OPCODE_HALT:
     if(operand_count != 0)  return INVALID_OPERAND;
@@ -546,21 +607,43 @@ case OPCODE_LD:
     
     a->current_section = a->sectionTable[index].name;
 
-    Symbol sym = {section.name, 0, 0, SECT, LOCAL, index};
+    Symbol sym = {section.name, 0, 0, SECT, LOCAL, index, NULL};
     addSymbol(sym, a->symbolTable);
     
+    return PASS;
+
+  case DIRECTIVE_WEAK:
+    for(int i = 0; i < operand_count; i++){
+      if(operand_list[i].type != OPERAND_TYPE_SYMBOL) return INVALID_OPERAND;
+      Symbol sym = {operand_list[i].symbol, 0, 0, NOTYPE, WEAK, -1, NULL};
+      index = findSymbol(sym.name, a->symbolTable);
+      if(index == -1) addSymbol(sym, a->symbolTable);
+      else  a->symbolTable[index].binding = WEAK;
+    }
     return PASS;
 
   case DIRECTIVE_GLOBAL:
     for(int i = 0; i < operand_count; i++){
       if(operand_list[i].type != OPERAND_TYPE_SYMBOL) return INVALID_OPERAND;
-      Symbol sym = {operand_list[i].symbol, 0, 0, NOTYPE, GLOBAL, -1};
+      Symbol sym = {operand_list[i].symbol, 0, 0, NOTYPE, GLOBAL, -1, NULL};
       index = findSymbol(sym.name, a->symbolTable);
       if(index == -1) addSymbol(sym, a->symbolTable);
       else  a->symbolTable[index].binding = GLOBAL;
     }
     return PASS;
 
+  case DIRECTIVE_TYPE:{
+    if(operand_count != 2) return INVALID_OPERAND;
+    if(operand_list[0].type != OPERAND_TYPE_SYMBOL) return INVALID_OPERAND;
+
+    SymbolType type = tot(operand_list[1].symbol);
+    Symbol sym = {operand_list[0].symbol, 0, 0, type, LOCAL, -1, NULL};
+    index = findSymbol(sym.name, a->symbolTable);
+    if(index == -1) addSymbol(sym, a->symbolTable);
+    else  a->symbolTable[index].type = type;
+    
+    return PASS;
+  }
   case DIRECTIVE_EXTERN:
     for(int i = 0; i < operand_count; i++){
       if(operand_list[i].type != OPERAND_TYPE_SYMBOL) return INVALID_OPERAND;

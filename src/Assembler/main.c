@@ -34,10 +34,10 @@ int main(int argc, const char** argv){
   fclose(output);
   
   char string[255];
-  if(argv[0][0] == '.' || argv[0][0] == '/' )
+  if(argv[0][0] == '.' || argv[0][0] == '/')
     sprintf( string, "./S_Obj_dump %s", files->output);
   else
-    sprintf( string, "S_Obj_dump %s", files->output);
+    sprintf( string, "./S_Obj_dump %s", files->output);
 
   system(string);
   

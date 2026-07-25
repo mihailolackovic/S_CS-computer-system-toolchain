@@ -39,12 +39,17 @@ string {string_parts}+
 "[" { return IDN_OPEN; }
 "]" { return IDN_CLOSE; }
 
+"{" { return BLK_OPEN; }
+"}" { return BLK_CLOSE; }
+
 "+" { return ADD; }
 "-" { return SUB; }
 "*" { return MUL; }
 "/" { return DIV; }
 "(" { return BRAKET_OPEN; }
 ")" { return BRAKET_CLOSE; }
+"<<" { return SHL; }
+">>" { return SHR; }
 
 "."{word}+ { yylval.str = strdup(yytext); return DIRECTIVE; }
 

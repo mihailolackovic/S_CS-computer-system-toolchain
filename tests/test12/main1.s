@@ -1,4 +1,4 @@
-# .weak a
+.weak a
 
 .section main1
 

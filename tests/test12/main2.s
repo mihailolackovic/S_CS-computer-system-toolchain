@@ -1,3 +1,4 @@
+.global a
 # .weak a
 
 .section main2

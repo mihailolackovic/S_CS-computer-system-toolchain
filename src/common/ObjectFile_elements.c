@@ -54,3 +54,18 @@ int addRelocation_O(Relocation relocation, Relocation* relocationTable, int relo
   }
   return 1;
 };
+
+SymbolType tot(char* type){
+  if(strcmp(type, "FUNC") == 0)
+    return FUNC;
+  if(strcmp(type, "STR") == 0)
+    return STR;
+  if(strcmp(type, "DATA") == 0)
+    return DATA;
+  if(strcmp(type, "SECT") == 0)
+    return SECT;
+  if(strcmp(type, "SRC") == 0)
+    return SRC;
+
+  return NOTYPE;
+};

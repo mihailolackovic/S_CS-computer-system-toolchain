@@ -1,5 +1,5 @@
-.global a
-# .weak a
+# .global a
+.weak a
 
 .section main
 

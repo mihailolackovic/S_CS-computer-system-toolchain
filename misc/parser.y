@@ -40,8 +40,8 @@ static void add_instruction(Instruction ins) {
     char *str;
 }
 
-%token END_LINE SEPERATOR IND_REG IND_VAL IDN_OPEN IDN_CLOSE
-%token ADD SUB MUL DIV BRAKET_OPEN BRAKET_CLOSE
+%token END_LINE SEPERATOR IND_REG IND_VAL IDN_OPEN IDN_CLOSE BLK_OPEN BLK_CLOSE
+%token ADD SUB MUL DIV BRAKET_OPEN BRAKET_CLOSE SHL SHR
 %token <str> DIRECTIVE LABEL
 %token <number> NUMBER
 %token <str> REGISTER SYMBOL OP_CODE STRING
@@ -81,6 +81,22 @@ line
       memcpy(instruction.operand_list, list, sizeof(Operand)*operand_count);
       instruction.operand_count = operand_count;
       
+      add_instruction(instruction);
+      
+      
+      operand_count = 0;
+      pending_label = NULL;
+    }
+  | curr_label curr_function BLK_OPEN args BLK_CLOSE END_LINE{
+      
+      Instruction instruction;
+      instruction.label = pending_label;
+      instruction.function = function;
+      instruction.operand_list = (Operand*)malloc(sizeof(Operand)*operand_count);
+      memcpy(instruction.operand_list, list, sizeof(Operand)*operand_count);
+      instruction.operand_count = operand_count;
+      
+      instruction.operand_list[0].dereferance_flag = 3;
       add_instruction(instruction);
       
       
@@ -213,6 +229,63 @@ relative_address
       Operand operand;
       operand.type = OPERAND_TYPE_REGISTER;
       operand.reg = $3;
+      operand.dereferance_flag = 1;
+
+      list[operand_count++] = operand;
+    }
+  | IND_REG REGISTER SHL NUMBER{
+      StackItem* si = malloc(sizeof(StackItem)*3);
+      si[0].type = ITEM_REGISTER;
+      si[0].reg = $2;
+
+      si[2].type = ITEM_NUMBER;
+      si[2].number = $4;
+
+      si[1].type = ITEM_OPERATION;
+      si[1].op = 5;
+
+      Operand operand;
+      operand.type = OPERAND_TYPE_EXPRESSION;
+      operand.expression = malloc(sizeof(Expression));
+      *operand.expression = (Expression){si, 3}; 
+      operand.dereferance_flag = 4;
+
+      list[operand_count++] = operand;
+    }
+  | IND_REG REGISTER SHR NUMBER{
+      StackItem* si = malloc(sizeof(StackItem)*3);
+      si[0].type = ITEM_REGISTER;
+      si[0].reg = $2;
+
+      si[2].type = ITEM_NUMBER;
+      si[2].number = $4;
+
+      si[1].type = ITEM_OPERATION;
+      si[1].op = 6;
+
+      Operand operand;
+      operand.type = OPERAND_TYPE_EXPRESSION;
+      operand.expression = malloc(sizeof(Expression));
+      *operand.expression = (Expression){si, 3}; 
+      operand.dereferance_flag = 4;
+
+      list[operand_count++] = operand;
+    }
+  | IDN_OPEN IND_REG REGISTER ADD IND_REG REGISTER IDN_CLOSE{
+      StackItem* si = malloc(sizeof(StackItem)*3);
+      si[0].type = ITEM_REGISTER;
+      si[0].reg = $3;
+
+      si[1].type = ITEM_REGISTER;
+      si[1].reg = $6;
+
+      si[2].type = ITEM_OPERATION;
+      si[2].op = OPERATION_TYPE_ADD;
+
+      Operand operand;
+      operand.type = OPERAND_TYPE_EXPRESSION;
+      operand.expression = malloc(sizeof(Expression));
+      *operand.expression = (Expression){si, 3}; 
       operand.dereferance_flag = 1;
 
       list[operand_count++] = operand;

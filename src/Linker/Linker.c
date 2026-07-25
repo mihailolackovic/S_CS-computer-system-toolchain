@@ -39,6 +39,16 @@ void Linker(Linker_init* lI){
     }
   }
 
+  int error = checkTypes(lI, iF, globalSymbolTable, globalSymbolTableSize);
+
+  if(error == -1){
+    for(int i = 0; i < lI->input_count; i++){
+      if(iF[i].error == LINKER_ERROR_TYPES_MISSMATCH){
+        printf("\n\nLINKER ERROR: multiple type definitions for global symbol: %s, in file %s\n\n", iF[i].symbolTable[iF[i].symbolTable_count].name, iF[i].file_name);
+        return;
+      }
+    } 
+  }
 
   resolveRelocations(lI, iF, mergedSectionTable, mergedSectionTableSize, sectionMap,
                      sectionMapSize, globalSymbolTable, globalSymbolTableSize);

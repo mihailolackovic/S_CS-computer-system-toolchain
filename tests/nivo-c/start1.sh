@@ -1,6 +1,6 @@
-ASSEMBLER=assembler
-LINKER=linker
-EMULATOR=emulator
+ASSEMBLER=./assembler
+LINKER=./linker
+EMULATOR=./emulator
 path=./tests/nivo-c/
 
 clear

@@ -12,7 +12,8 @@ typedef enum __attribute__((__packed__)){
   MALLOC_FAILED,
   LINK_ERROR_UNDEFINED_SYMBOL,
   LINK_ERROR_MULTIPLE_DEFINITION,
-  LINK_ERROR_RELOCATION_OVERFLOW
+  LINK_ERROR_RELOCATION_OVERFLOW,
+  LINKER_ERROR_TYPES_MISSMATCH
 }LinkERROR;
 
 typedef struct{
@@ -41,7 +42,6 @@ typedef struct{
   char* outputT;
   FILE* outputT1F;
   char* outputT1;
-
 } Linker_init;
 
 void parse(int argc, const char** argv, Linker_init* lI);

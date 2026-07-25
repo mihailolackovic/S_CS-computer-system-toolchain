@@ -36,10 +36,12 @@ static char* directive_list[] = {
   ".extern",
   ".section",
   ".word",
+  ".weak",
   ".skip",
   ".ascii",
   ".equ",
   ".end",
+  ".type",
   NULL // footer
 };
 

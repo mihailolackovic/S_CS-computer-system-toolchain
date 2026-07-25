@@ -223,7 +223,7 @@ int createGlobalSymbolTable(Linker_init* lI, InputFile* iF, SectionMap* sectionM
     for(int s = 0; s < iF[i].symbolTable_count; s++){
       Symbol sym = iF[i].symbolTable[s];
 
-      if(sym.binding != GLOBAL) continue;
+      if(sym.binding != GLOBAL && sym.binding != WEAK) continue;
       if(sym.type == SECT || sym.type == SRC) continue;
 
       int address;
@@ -235,14 +235,30 @@ int createGlobalSymbolTable(Linker_init* lI, InputFile* iF, SectionMap* sectionM
         int idx = findSectionMap(i, sym.section, sectionMap, sectionMapSize);
         address = sectionMap[idx].offset + sym.value;
       }
+      if(sym.binding == GLOBAL){
+        int index = findGlobalSymbol(sym.name, globalSymbolTable, count);
+        if(index != -1){
+          if(globalSymbolTable[index].weakness == 0){
+            iF[i].error = LINK_ERROR_MULTIPLE_DEFINITION;
+            iF[i].symbolTable_count = s;
+          }
+          else{
+            globalSymbolTable[index].weakness = 0;
+            globalSymbolTable[index].value = address;
+            globalSymbolTable[index].type = sym.type;
+          }
+          continue;
+        }
 
-      if(findGlobalSymbol(sym.name, globalSymbolTable, count) != -1){
-        iF[i].error = LINK_ERROR_MULTIPLE_DEFINITION;
-        iF[i].symbolTable_count = s;
-        continue;
+        globalSymbolTable[count++] = (GlobalSymbol){strdup(sym.name), address, 0, sym.type};
       }
-
-      globalSymbolTable[count++] = (GlobalSymbol){strdup(sym.name), address};
+      else if (sym.binding == WEAK){
+        int index = findGlobalSymbol(sym.name, globalSymbolTable, count);
+        if(index != -1){
+          continue;
+        }
+        globalSymbolTable[count++] = (GlobalSymbol){strdup(sym.name), address, 1, sym.type};
+      }
     }
   }
 
@@ -257,6 +273,24 @@ int createGlobalSymbolTable(Linker_init* lI, InputFile* iF, SectionMap* sectionM
   }
 
   return count;
+};
+
+int checkTypes(Linker_init* lI, InputFile* iF, GlobalSymbol* globalSymbolTable, int globalSymbolCount){
+  for(int i = 0; i < lI->input_count; i++){
+    for(int j = 0; j < iF[i].symbolTable_count; j++){
+      int index = findGlobalSymbol(iF[i].symbolTable[j].name, globalSymbolTable, globalSymbolCount);
+      if(index != -1){
+        if(globalSymbolTable[index].type != iF[i].symbolTable[j].type){
+          if(iF[i].symbolTable[j].binding == EXTERN)
+            continue;
+          iF[i].error = LINKER_ERROR_TYPES_MISSMATCH;
+          iF[i].symbolTable[iF[i].symbolTable_count].name = strdup(iF[i].symbolTable[j].name);
+          return -1;
+        }
+      }
+    }
+  }
+  return 0;
 };
 
 int resolveRelocations(
@@ -312,7 +346,7 @@ int resolveRelocations(
       int address = 0;
       if(sym.section == ABS_S){
         address = sym.value;
-      } else if(sym.binding == EXTERN || sym.section == EXTERN_S || sym.section == UND_S){
+      } else if(sym.binding == EXTERN || sym.binding == WEAK || sym.section == EXTERN_S || sym.section == UND_S){
         int g = findGlobalSymbol(sym.name, globalSymbolTable, globalSymbolCount);
         if(g == -1){ iF[i].error = LINK_ERROR_UNDEFINED_SYMBOL; continue; }
         address = globalSymbolTable[g].value;
@@ -390,7 +424,7 @@ int resolveRelocations(
         int address = 0;
         if(sym.section == ABS_S){
           address = sym.value;
-        } else if(sym.binding == EXTERN || sym.section == EXTERN_S || sym.section == UND_S){
+        } else if(sym.binding == EXTERN || sym.binding == WEAK || sym.section == EXTERN_S || sym.section == UND_S){
           int g = findGlobalSymbol(sym.name, globalSymbolTable, globalSymbolCount);
           if(g == -1){ iF[i].error = LINK_ERROR_UNDEFINED_SYMBOL; continue; }
           address = globalSymbolTable[g].value;
@@ -410,7 +444,7 @@ int resolveRelocations(
         int resolvable = 1;
         if(sym.section == ABS_S){
           target_addr = sym.value;
-        } else if(sym.binding == EXTERN || sym.section == EXTERN_S || sym.section == UND_S){
+        } else if(sym.binding == EXTERN || sym.binding == WEAK || sym.section == EXTERN_S || sym.section == UND_S){
           int g = findGlobalSymbol(sym.name, globalSymbolTable, globalSymbolCount);
           if(g == -1) resolvable = 0;
           else target_addr = globalSymbolTable[g].value;

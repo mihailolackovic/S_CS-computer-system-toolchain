@@ -16,10 +16,12 @@ static const FunctionTableElement directiveTable[] = {
   {".extern", DIRECTIVE_EXTERN},
   {".section", DIRECTIVE_SECTION},
   {".word", DIRECTIVE_WORD},
+  {".weak", DIRECTIVE_WEAK},
   {".skip", DIRECTIVE_SKIP},
   {".ascii", DIRECTIVE_ASCII},
   {".equ", DIRECTIVE_EQU},
-  {".end", DIRECTIVE_END}
+  {".end", DIRECTIVE_END},
+  {".type", DIRECTIVE_TYPE}
 };
 static const FunctionTableElement opcodeTable[] = {
   {"halt",  OPCODE_HALT},
